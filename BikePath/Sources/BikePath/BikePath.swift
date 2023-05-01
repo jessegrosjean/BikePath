@@ -1,7 +1,9 @@
 import Parsing
+import Foundation
 
 struct Row {
-    
+    var text: String
+    var attributes: [String:String]
 }
 
 struct Outline {
@@ -25,31 +27,36 @@ struct Step {
 }
 
 indirect enum Predicate {
-    case comparison(KeyPath<Row, String>, Relation, Modifier?, String)
+    case comparison(PredicateValue, Relation, Modifier, PredicateValue)
     case or(Predicate, Predicate)
     case and(Predicate, Predicate)
     case not(Predicate)
 }
 
-enum Relation {
-    case beginsWith
-    case contains
-    case endsWith
-    case matches
-    case equal
-    case notEqual
-    case lessThanOrEqual
-    case greaterThenOrEqual
-    case lessThan
-    case greaterThen
+enum PredicateValue {
+    case attribute(String)
+    case literal(String)
 }
 
-enum Modifier {
-    case caseSensitive
-    case caseInsensitive
-    case numericCompare
-    case dateCompare
-    case listCompare
+enum Relation: String, CaseIterable {
+    case beginsWith = "beginswith"
+    case contains
+    case endsWith = "endswith"
+    case matches
+    case equal = "="
+    case notEqual = "!="
+    case lessThanOrEqual = "<="
+    case greaterThenOrEqual = ">="
+    case lessThan = "<"
+    case greaterThen = ">"
+}
+
+enum Modifier: String, CaseIterable {
+    case caseSensitive = "[s]"
+    case caseInsensitive = "[i]"
+    case numericCompare = "[n]"
+    case dateCompare = "[d]"
+    case listCompare = "[l]"
 }
 
 enum Axis {
@@ -94,4 +101,59 @@ let shortcutsAxis = OneOf {
     "/".map { Axis.childShortcut }
     "..".map { Axis.parentShortcut }
     ".".map { Axis.selfShortcut }
+}
+
+let attribute = Parse(.memberwise(PredicateValue.attribute)) {
+    "@"
+    Prefix { $0 != " " }.map(.string)
+}
+
+let singleQuotedString = Parse {
+    "'"
+    PrefixUpTo("'")
+    "'"
+}
+
+let doubleQuotedString = Parse {
+    "\""
+    PrefixUpTo("\"")
+    "\""
+}
+
+let string = OneOf {
+    singleQuotedString
+    doubleQuotedString
+    CharacterSet.alphanumerics
+}.map(.string)
+
+let literal = Parse(.memberwise(PredicateValue.literal)) {
+    string
+}
+
+let predicateValue = OneOf {
+    attribute
+    literal
+}
+
+let comparison = Parse {
+    predicateValue
+        .replaceError(with: .attribute("text"))
+
+    Whitespace(.horizontal)
+
+    Relation.parser()
+        .replaceError(with: .contains)
+
+    Whitespace(.horizontal)
+
+    Modifier.parser()
+        .replaceError(with: .caseInsensitive)
+
+    Whitespace(.horizontal)
+
+    predicateValue
+}
+
+let predicate = OneOf {
+    comparison
 }
