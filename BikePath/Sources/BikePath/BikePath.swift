@@ -1,37 +1,68 @@
-import Parsing
+import Foundation
 
-struct Row {
-    
+public indirect enum PathExpression {
+    case path(Path)
+    case union(PathExpression, PathExpression)
+    case except(PathExpression, PathExpression)
+    case intersect(PathExpression, PathExpression)
 }
 
-struct Outline {
-    
-}
-
-indirect enum BikePathExpression {
-    case path(BikePath)
-    case union(BikePathExpression, BikePathExpression)
-    case except(BikePathExpression, BikePathExpression)
-    case intersect(BikePathExpression, BikePathExpression)
-}
-
-struct BikePath {
+public struct Path {
     var steps: [Step]
 }
 
-struct Step {
+public struct Step {
     var axis: Axis
     var predicate: Predicate
 }
 
-indirect enum Predicate {
-    case comparison(KeyPath<Row, String>, Relation, Modifier?, String)
+public enum Axis {
+    case ancestor
+    case ancestorOrSelf
+    case parent
+    case parentShortcut
+    case `self`
+    case selfShortcut
+    case child
+    case childShortcut
+    case descendant
+    case descendantOrSelf
+    case descendantOrSelfShortcut
+    
+    var inverse: Self {
+        switch self {
+        case .ancestor:
+            return .descendant
+        case .ancestorOrSelf:
+            return .descendantOrSelf
+        case .parent, .parentShortcut:
+            return .child
+        case .self, .selfShortcut:
+            return .self
+        case .child, .childShortcut:
+            return .parent
+        case .descendant:
+            return .ancestor
+        case .descendantOrSelf, .descendantOrSelfShortcut:
+            return .ancestorOrSelf
+        }
+    }
+}
+
+public indirect enum Predicate {
+    case comparison(Value, Relation, Modifier, Value)
     case or(Predicate, Predicate)
     case and(Predicate, Predicate)
     case not(Predicate)
+    case any
 }
 
-enum Relation {
+public enum Value {
+    case literal(String)
+    case getAttribute(String)
+}
+
+public enum Relation {
     case beginsWith
     case contains
     case endsWith
@@ -44,54 +75,10 @@ enum Relation {
     case greaterThen
 }
 
-enum Modifier {
+public enum Modifier {
     case caseSensitive
     case caseInsensitive
     case numericCompare
     case dateCompare
     case listCompare
-}
-
-enum Axis {
-    case ancestor
-    case ancestorOrSelf
-    case parent
-    case parentShortcut
-    case slf
-    case selfShortcut
-    case child
-    case childShortcut
-    case descendant
-    case descendantOrSelf
-    case descendantOrSelfShortcut
-}
-
-let axis = OneOf {
-    ancestorAxis
-    parentChildAxis
-    descendantAxis
-    shortcutsAxis
-}
-
-let ancestorAxis = OneOf {
-    "ancestor::".map { Axis.ancestor }
-    "ancestor-or-self::".map { Axis.ancestorOrSelf }
-}
-
-let parentChildAxis = OneOf {
-    "parent::".map { Axis.parent }
-    "self::".map { Axis.slf }
-    "child::".map { Axis.child }
-}
-
-let descendantAxis = OneOf {
-    "descendant::".map { Axis.descendant }
-    "descendant-or-self::".map { Axis.descendantOrSelf }
-}
-
-let shortcutsAxis = OneOf {
-    "//".map { Axis.descendantOrSelfShortcut }
-    "/".map { Axis.childShortcut }
-    "..".map { Axis.parentShortcut }
-    ".".map { Axis.selfShortcut }
 }
