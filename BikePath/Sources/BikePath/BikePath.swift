@@ -1,29 +1,29 @@
 import Foundation
 
-public indirect enum PathExpression {
+public indirect enum PathExpression: Equatable {
     case path(Path)
     case union(PathExpression, PathExpression)
     case except(PathExpression, PathExpression)
     case intersect(PathExpression, PathExpression)
 }
 
-public struct Path {
+public struct Path: Equatable {
     var absolute: Bool
     var steps: [Step]
 }
 
-public struct Step {
+public struct Step: Equatable {
     var axis: Axis
     var predicate: Predicate
     var slice: Slice?
 }
 
-public struct Slice {
+public struct Slice: Equatable {
     var start: Int?
     var end: Int?
 }
 
-public enum Axis {
+public enum Axis: Equatable {
     case ancestor
     case ancestorOrSelf
     case parent
@@ -69,7 +69,7 @@ public enum Axis {
     }
 }
 
-public indirect enum Predicate {
+public indirect enum Predicate: Equatable {
     case comparison(Value, Relation, Modifier, Value)
     case or(Predicate, Predicate)
     case and(Predicate, Predicate)
@@ -77,13 +77,13 @@ public indirect enum Predicate {
     case any
 }
 
-public enum Value {
+public enum Value: Equatable {
     case literal(String)
     case getAttribute(String)
     case function(String, PathExpression)
 }
 
-public enum Relation {
+public enum Relation: Equatable {
     case beginsWith
     case contains
     case endsWith
@@ -96,7 +96,7 @@ public enum Relation {
     case greaterThan
 }
 
-public enum Modifier {
+public enum Modifier: Equatable {
     case caseSensitive
     case caseInsensitive
     case numericCompare
@@ -289,8 +289,8 @@ struct CharacterStream {
     }
 }
 
-struct ParseError: Error {
-    var message: String
+struct ParseError: Error, CustomStringConvertible {
+    var description: String
 }
 
 // TODO: maybe change to a struct and make mark return a parser so we
@@ -311,13 +311,13 @@ public class Parser {
         return path
     }
 
-    private func parseItemPathExpression() throws -> PathExpression {
+    func parseItemPathExpression() throws -> PathExpression {
         skipWhitespace()
         let path = try parseUnionPaths()
         return path
     }
 
-    private func parseUnionPaths() throws -> PathExpression {
+    func parseUnionPaths() throws -> PathExpression {
         skipWhitespace()
         let path = try parseExceptPaths()
         skipWhitespace()
@@ -328,7 +328,7 @@ public class Parser {
         return path
     }
 
-    private func parseExceptPaths() throws -> PathExpression {
+    func parseExceptPaths() throws -> PathExpression {
         skipWhitespace()
         let path = try parseIntersectPaths()
         skipWhitespace()
@@ -339,7 +339,7 @@ public class Parser {
         return path
     }
 
-    private func parseIntersectPaths() throws -> PathExpression {
+    func parseIntersectPaths() throws -> PathExpression {
         skipWhitespace()
         let path = try parsePathExpression()
         skipWhitespace()
@@ -350,7 +350,7 @@ public class Parser {
         return path
     }
 
-    private func parseSlice() throws -> Slice {
+    func parseSlice() throws -> Slice {
         let pos = mark()
 
         if let slice = try? parseSliceSimple() {
@@ -362,7 +362,7 @@ public class Parser {
         return try parseSliceRange()
     }
 
-    private func parseSliceSimple() throws -> Slice {
+    func parseSliceSimple() throws -> Slice {
         guard skipPrefix("[") else {
             throw error("expected '['")
         }
@@ -376,7 +376,7 @@ public class Parser {
         return Slice(start: start, end: nil)
     }
 
-    private func parseSliceRange() throws -> Slice {
+    func parseSliceRange() throws -> Slice {
         guard skipPrefix("[") else {
             throw error("expected '['")
         }
@@ -396,7 +396,7 @@ public class Parser {
         return Slice(start: start, end: end)
     }
 
-    private func parseInteger() throws -> Int {
+    func parseInteger() throws -> Int {
         var value = 0
         var sign = 1
 
@@ -413,13 +413,13 @@ public class Parser {
         return value * sign
     }
 
-    private func parsePathExpression() throws -> PathExpression {
+    func parsePathExpression() throws -> PathExpression {
         skipWhitespace()
         let path = try parseItemPath()
         return PathExpression.path(path)
     }
 
-    private func parseItemPath() throws -> Path {
+    func parseItemPath() throws -> Path {
         var absolute = false
         if skipPrefix("/") {
             absolute = true
@@ -435,7 +435,7 @@ public class Parser {
         return Path(absolute: absolute, steps: steps)
     }
 
-    private func parsePathStep() throws -> Step {
+    func parsePathStep() throws -> Step {
         let axis = (try? parseAxis()) ?? .child
         let predicate = try parseOrPredicates()
 
@@ -447,7 +447,7 @@ public class Parser {
         return Step(axis: axis, predicate: predicate, slice: slice)
     }
 
-    private func parseAxis() throws -> Axis {
+    func parseAxis() throws -> Axis {
         if skipPrefix("ancestor-or-self::") {
             return .ancestorOrSelf
         } else if skipPrefix("ancestor::") {
@@ -479,7 +479,7 @@ public class Parser {
         throw error("expected axis")
     }
 
-    private func parseOrPredicates() throws -> Predicate {
+    func parseOrPredicates() throws -> Predicate {
         skipWhitespace()
         let predicate = try parseAndPredicates()
 
@@ -493,7 +493,7 @@ public class Parser {
         return predicate
     }
 
-    private func parseAndPredicates() throws -> Predicate {
+    func parseAndPredicates() throws -> Predicate {
         skipWhitespace()
         let predicate = try parseNotPredicate()
 
@@ -507,7 +507,7 @@ public class Parser {
         return predicate
     }
 
-    private func parseNotPredicate() throws -> Predicate {
+    func parseNotPredicate() throws -> Predicate {
         var count = 0
 
         while skipWhitespace() && skipNot() {
@@ -524,7 +524,7 @@ public class Parser {
         }
     }
 
-    private func parsePredicateExpression() throws -> Predicate {
+    func parsePredicateExpression() throws -> Predicate {
         skipWhitespace()
         if skipPrefix("(") {
             let predicate = try parseOrPredicates()
@@ -538,7 +538,7 @@ public class Parser {
         return try parseComparisonPredicate()
     }
 
-    private func parseComparisonPredicate() throws -> Predicate {
+    func parseComparisonPredicate() throws -> Predicate {
         skipWhitespace()
         if skipPrefix("*") {
             return .any
@@ -559,7 +559,7 @@ public class Parser {
         }
     }
 
-    private func parsePredicateValue() throws -> Value {
+    func parsePredicateValue() throws -> Value {
         let pos = mark()
 
         if let attribute = try? parseAttributeValue() {
@@ -583,7 +583,7 @@ public class Parser {
         throw error("expected predicate value")
     }
 
-    private func parseAttributeValue() throws -> Value {
+    func parseAttributeValue() throws -> Value {
         guard skipPrefix("@") else {
             throw error("expected '@'")
         }
@@ -593,7 +593,7 @@ public class Parser {
         return .getAttribute(name)
     }
 
-    private func parseFunctionValue() throws -> Value {
+    func parseFunctionValue() throws -> Value {
         let name = try parseIdentifier()
 
         guard skipPrefix("(") else {
@@ -609,7 +609,7 @@ public class Parser {
         return .function(name, expression)
     }
 
-    private func parseRelation() throws -> Relation {
+    func parseRelation() throws -> Relation {
         if skipBeginswith() {
             return .beginsWith
         } else if skipEndswith() {
@@ -635,7 +635,7 @@ public class Parser {
         throw error("expected relation")
     }
 
-    private func parseModifier() throws -> Modifier {
+    func parseModifier() throws -> Modifier {
         guard skipPrefix("[") else {
             throw error("expected '['")
         }
@@ -667,7 +667,7 @@ public class Parser {
         return modifier
     }
 
-    private func parseStringValue() throws -> Value {
+    func parseStringValue() throws -> Value {
         let pos = mark()
 
         if let string = try? parseQuotedString() {
@@ -685,7 +685,7 @@ public class Parser {
         throw error("expected string value")
     }
 
-    private func parseQuotedString() throws -> String {
+    func parseQuotedString() throws -> String {
         guard skipPrefix("\"") else {
             throw error("expected '\"'")
         }
@@ -722,7 +722,7 @@ public class Parser {
         throw error("expected '\"'")
     }
 
-    private func parseUnquotedString() throws -> String {
+    func parseUnquotedString() throws -> String {
         if skipKeyword() {
             throw error("unexpected keyword")
         }
@@ -742,7 +742,7 @@ public class Parser {
         return s
     }
 
-    private func parseIdentifier() throws -> String {
+    func parseIdentifier() throws -> String {
         var s = try parseIdentStart()
 
         while true {
@@ -758,7 +758,7 @@ public class Parser {
         return s
     }
 
-    private func parseIdentStart() throws -> String {
+    func parseIdentStart() throws -> String {
         let c = chars.next()
         guard let c else {
             throw error("expected identifier, got EOF")
@@ -771,7 +771,7 @@ public class Parser {
         }
     }
 
-    private func parseIdentRest() throws -> String {
+    func parseIdentRest() throws -> String {
         let c = chars.next()
         guard let c else {
             throw error("expected identifier, got EOF")
@@ -784,7 +784,7 @@ public class Parser {
         }
     }
 
-    private func skipKeyword() -> Bool {
+    func skipKeyword() -> Bool {
         let pos = mark()
         if (try? parseRelation()) != nil {
             return true
@@ -797,7 +797,7 @@ public class Parser {
         return skipUnion() || skipExcept() || skipIntersect() || skipAnd() || skipOr() || skipNot()
     }
 
-    private func skipUnion() -> Bool {
+    func skipUnion() -> Bool {
         guard skipPrefix("union") else {
             return false
         }
@@ -805,7 +805,7 @@ public class Parser {
         return !matches { try parseIdentRest() }
     }
 
-    private func skipExcept() -> Bool {
+    func skipExcept() -> Bool {
         guard skipPrefix("except") else {
             return false
         }
@@ -813,7 +813,7 @@ public class Parser {
         return !matches { try parseIdentRest() }
     }
 
-    private func skipIntersect() -> Bool {
+    func skipIntersect() -> Bool {
         guard skipPrefix("intersect") else {
             return false
         }
@@ -821,7 +821,7 @@ public class Parser {
         return !matches { try parseIdentRest() }
     }
 
-    private func skipAnd() -> Bool {
+    func skipAnd() -> Bool {
         guard skipPrefix("and") else {
             return false
         }
@@ -829,7 +829,7 @@ public class Parser {
         return !matches { try parseIdentRest() }
     }
 
-    private func skipOr() -> Bool {
+    func skipOr() -> Bool {
         guard skipPrefix("or") else {
             return false
         }
@@ -837,7 +837,7 @@ public class Parser {
         return !matches { try parseIdentRest() }
     }
 
-    private func skipNot() -> Bool {
+    func skipNot() -> Bool {
         guard skipPrefix("not") else {
             return false
         }
@@ -845,7 +845,7 @@ public class Parser {
         return !matches { try parseIdentRest() }
     }
 
-    private func skipBeginswith() -> Bool {
+    func skipBeginswith() -> Bool {
         guard skipPrefix("beginswith") else {
             return false
         }
@@ -853,7 +853,7 @@ public class Parser {
         return !matches { try parseIdentRest() }
     }
 
-    private func skipEndswith() -> Bool {
+    func skipEndswith() -> Bool {
         guard skipPrefix("endswith") else {
             return false
         }
@@ -861,7 +861,7 @@ public class Parser {
         return !matches { try parseIdentRest() }
     }
 
-    private func skipContains() -> Bool {
+    func skipContains() -> Bool {
         guard skipPrefix("contains") else {
             return false
         }
@@ -869,7 +869,7 @@ public class Parser {
         return !matches { try parseIdentRest() }
     }
 
-    private func skipMatches() -> Bool {
+    func skipMatches() -> Bool {
         guard skipPrefix("matches") else {
             return false
         }
@@ -877,7 +877,7 @@ public class Parser {
         return !matches { try parseIdentRest() }
     }
 
-    private func matches(_ f: () throws -> String) -> Bool {
+    func matches(_ f: () throws -> String) -> Bool {
         let pos = mark()
         defer { reset(pos) }
 
@@ -889,7 +889,7 @@ public class Parser {
         }
     }
 
-    private func skipPrefix(_ s: String) -> Bool {
+    func skipPrefix(_ s: String) -> Bool {
         if hasPrefix(s) {
             for _ in 0..<s.count {
                 _ = chars.next()
@@ -899,12 +899,12 @@ public class Parser {
         return false
     }
 
-    private func hasPrefix(_ s: String) -> Bool {
+    func hasPrefix(_ s: String) -> Bool {
         return chars.hasPrefix(s)
     }
 
     @discardableResult
-    private func skipWhitespace() -> Bool {
+    func skipWhitespace() -> Bool {
         while let c = chars.peek(), c.isWhitespace {
             _ = chars.next()
         }
@@ -913,25 +913,25 @@ public class Parser {
         return true
     }
 
-    private func expectEOF() throws {
+    func expectEOF() throws {
         guard chars.peek() == nil else {
             throw error("expected end of input")
         }
     }
 
-    private func mark() -> String.Index {
-        return chars.pos
+    func mark() -> CharacterStream {
+        return chars
     }
 
-    private func reset(_ pos: String.Index) {
-        chars.pos = pos
+    func reset(_ old: CharacterStream) {
+        chars = old
     }
 
-    private func error(_ message: String) -> ParseError {
+    func error(_ message: String) -> ParseError {
         let line = chars.currentLine()
         let marker = String(repeating: " ", count: chars.col) + "^"
-        let message = "\(chars.line):\(chars.col): \(message)\n\(line)\n\(marker)"
+        let message = "\n(input)\(chars.line):\(chars.col): syntax error: \(message)\n\(line)\n\(marker)\n"
 
-        return ParseError(message: message)
+        return ParseError(description: message)
     }
 }
