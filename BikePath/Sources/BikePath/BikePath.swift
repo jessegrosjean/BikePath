@@ -696,6 +696,12 @@ public class Parser {
             string += parseSpaces()
         }
 
+        // HACK: not in the grammar. Remove leading and
+        // trailing whitespace from string values so that
+        // we end up with '"shoes" and "socks"' instead
+        // of '"shoes " and "socks "'
+        string = string.trimmingCharacters(in: .whitespaces)
+
         return .literal(string)
     }
 
