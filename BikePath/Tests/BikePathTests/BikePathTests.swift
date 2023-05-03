@@ -17,7 +17,7 @@ final class BikePathTests: XCTestCase {
     }
 
     func testTwoWords() throws {
-        let p = Parser("h w")
+        let p = Parser("hello world")
 
         let expected = PathExpression.path(Path(absolute: false, steps: [
             Step(axis: .child, predicate: .comparison(

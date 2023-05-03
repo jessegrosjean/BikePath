@@ -184,12 +184,32 @@ public enum Modifier: Equatable {
 //           / "<"
 //           / ">"
 // modifier <- "[" [isndl] "]"
-// stringValue <- (quotedString / unquotedString)+
+// stringValue <- ((quotedString / unquotedString) spaces)+
 // quotedString <- '"' ([^"] / "\"")* '"'
-// unquotedString <- !keyword identRest+
+// unquotedString <- !keyword ([0-9] / [~`!#$%^&*-+=\{\}|\\;',.?-] / identifier)
 // identifier <- identStart identRest*
-// identStart <- [a-zA-Z_]
-// identRest <- [0-9a-zA-Z_]
+// identStart <- ':'
+//             / '_'
+//             / [A-Z]
+//             / [a-z]
+//             / [\u00C0-\u00D6]
+//             / [\u00D8-\u00F6]
+//             / [\u00F8-\u02FF]
+//             / [\u0370-\u037D]
+//             / [\u037F-\u1FFF]
+//             / [\u200C-\u200D]
+//             / [\u2070-\u218F]
+//             / [\u2C00-\u2FEF]
+//             / [\u3001-\uD7FF]
+//             / [\uF900-\uFDCF]
+//             / [\uFDF0-\uFFFD]
+// identRest <- identStart
+//            / '-'
+//            / '.'
+//            / [0-9]
+//            / [\u00B7]
+//            / [\u0300-\u036F]
+//            / [\u203F-\u2040]
 // keyword <- relation
 //          / union
 //          / except
@@ -668,16 +688,28 @@ public class Parser {
     }
 
     func parseStringValue() throws -> Value {
+        var string = try parseStringOrUnquotedString()
+        string += parseSpaces()
+
+        while let s = try? parseStringOrUnquotedString() {
+            string += s
+            string += parseSpaces()
+        }
+
+        return .literal(string)
+    }
+
+    func parseStringOrUnquotedString() throws -> String {
         let pos = mark()
 
         if let string = try? parseQuotedString() {
-            return .literal(string)
+            return string
         }
 
         reset(pos)
 
         if let string = try? parseUnquotedString() {
-            return .literal(string)
+            return string
         }
 
         reset(pos)
@@ -727,19 +759,18 @@ public class Parser {
             throw error("unexpected keyword")
         }
 
-        var s = try parseIdentRest()
-
-        while true {
-            let pos = mark()
-            guard let c = try? parseIdentRest() else {
-                reset(pos)
-                break
-            }
-
-            s.append(c)
+        guard let c = chars.peek() else {
+            throw error("expected string")
         }
 
-        return s
+        let cs = "0123456789~`!#$%^&*-+={}|\\;',.?-"
+
+        if cs.contains(c) {
+            _ = chars.next()
+            return String(c)
+        }
+
+        return try parseIdentifier()
     }
 
     func parseIdentifier() throws -> String {
@@ -758,13 +789,44 @@ public class Parser {
         return s
     }
 
+    static let identStart: CharacterSet = {
+        var s = CharacterSet(charactersIn: ":_")
+        s.insert(charactersIn: "A"..."Z")
+        s.insert(charactersIn: "a"..."z")
+        s.insert(charactersIn: "\u{00C0}"..."\u{00D6}")
+        s.insert(charactersIn: "\u{00D8}"..."\u{00F6}")
+        s.insert(charactersIn: "\u{00F8}"..."\u{02FF}")
+        s.insert(charactersIn: "\u{0370}"..."\u{037D}")
+        s.insert(charactersIn: "\u{037F}"..."\u{1FFF}")
+        s.insert(charactersIn: "\u{200C}"..."\u{200D}")
+        s.insert(charactersIn: "\u{2070}"..."\u{218F}")
+        s.insert(charactersIn: "\u{2C00}"..."\u{2FEF}")
+        s.insert(charactersIn: "\u{3001}"..."\u{D7FF}")
+        s.insert(charactersIn: "\u{F900}"..."\u{FDCF}")
+        s.insert(charactersIn: "\u{FDF0}"..."\u{FFFD}")
+        return s
+    }()
+
+    static let identRest: CharacterSet = {
+        var s = identStart
+        s.insert(charactersIn: "-.")
+        s.insert(charactersIn: "0"..."9")
+        s.insert(charactersIn: "\u{0300}"..."\u{036F}")
+        s.insert(charactersIn: "\u{203F}"..."\u{2040}")
+        return s
+    }()
+
     func parseIdentStart() throws -> String {
         let c = chars.next()
         guard let c else {
             throw error("expected identifier, got EOF")
         }
 
-        if "a" <= c && c <= "z" || "A" <= c && c <= "Z" || c == "_" {
+        guard let codepoint = c.unicodeScalars.first, c.unicodeScalars.count == 1 else {
+            throw error("expected identifier")
+        }
+
+        if Self.identStart.contains(codepoint) {
             return String(c)
         } else {
             throw error("expected identifier")
@@ -777,7 +839,11 @@ public class Parser {
             throw error("expected identifier, got EOF")
         }
 
-        if "0" <= c && c <= "9" || "a" <= c && c <= "z" || "A" <= c && c <= "Z" || c == "_" {
+        guard let codepoint = c.unicodeScalars.first, c.unicodeScalars.count == 1 else {
+            throw error("expected identifier")
+        }
+
+        if Self.identRest.contains(codepoint) {
             return String(c)
         } else {
             throw error("expected identifier")
@@ -901,6 +967,14 @@ public class Parser {
 
     func hasPrefix(_ s: String) -> Bool {
         return chars.hasPrefix(s)
+    }
+
+    func parseSpaces() -> String {
+        var s = ""
+        while let c = chars.peek(), c.isWhitespace {
+            s.append(chars.next()!)
+        }
+        return s
     }
 
     @discardableResult
