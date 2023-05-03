@@ -8,12 +8,19 @@ public indirect enum PathExpression {
 }
 
 public struct Path {
+    var absolute: Bool
     var steps: [Step]
 }
 
 public struct Step {
     var axis: Axis
     var predicate: Predicate
+    var slice: Slice?
+}
+
+public struct Slice {
+    var start: Int?
+    var end: Int?
 }
 
 public enum Axis {
@@ -26,8 +33,13 @@ public enum Axis {
     case child
     case childShortcut
     case descendant
+    case descendantShortcut
     case descendantOrSelf
     case descendantOrSelfShortcut
+    case followingSibling
+    case following
+    case precedingSibling
+    case preceding
     
     var inverse: Self {
         switch self {
@@ -41,10 +53,18 @@ public enum Axis {
             return .self
         case .child, .childShortcut:
             return .parent
-        case .descendant:
+        case .descendant, .descendantShortcut:
             return .ancestor
         case .descendantOrSelf, .descendantOrSelfShortcut:
             return .ancestorOrSelf
+        case .followingSibling:
+            return .precedingSibling
+        case .following:
+            return .preceding
+        case .precedingSibling:
+            return .followingSibling
+        case .preceding:
+            return .following
         }
     }
 }
@@ -60,6 +80,7 @@ public indirect enum Predicate {
 public enum Value {
     case literal(String)
     case getAttribute(String)
+    case function(String, PathExpression)
 }
 
 public enum Relation {
@@ -70,9 +91,9 @@ public enum Relation {
     case equal
     case notEqual
     case lessThanOrEqual
-    case greaterThenOrEqual
+    case greaterThanOrEqual
     case lessThan
-    case greaterThen
+    case greaterThan
 }
 
 public enum Modifier {
@@ -85,10 +106,31 @@ public enum Modifier {
 
 // A parser for a query language that allows you to select nodes in a tree.
 // Here's a rough PEG for the language. It uses Ohmjs-like semantics: rules
-// that start with a capital letter are "syntatctic" and rules that start with
+// that start with a capital letter are "syntactic" and rules that start with
 // a lowercase letter are "lexical." Syntactic rules implictly skip whitespace
 // charcters in their body. Before each expression, in a syntactic rule, there
 // is an implictly inserted `spaces` rule that skips whitespace.
+//
+// From the Ohm docs (https://ohmjs.org/docs/syntax-reference#syntactic-lexical)
+//
+//    In the body of a syntactic rule, Ohm implicitly inserts applications of
+//    the spaces rule before each expression. (The spaces rule is defined as
+//    spaces = space*.) If the start rule is a syntactic rule, both leading
+//    and trailing spaces are skipped around the top-level application.
+//
+// E.g.
+//    Foo <- Bar baz Qux
+//    Bar <- "bar"
+//    baz <- "baz" -- baz is a lexical rule
+//    Qux <- "qux"
+//
+// is equivalent to:
+//    foo <- spaces bar spaces baz spaces qux spaces -- start rule, spaces skipped at the end
+//    bar <- spaces "bar"
+//    baz <- "baz"
+//    qux <- spaces "qux"
+//
+//
 //
 // ItemPathExpression <- UnionPaths
 // UnionPaths <- ExceptPaths "union" UnionPaths
@@ -97,7 +139,9 @@ public enum Modifier {
 //              / IntersectPaths
 // IntersectPaths <- PathExpression "intersect" IntersectPaths
 //                 / PathExpression
-// slice <- "[" integer? ":" integer? "]" / "[" integer "]"
+// slice <- sliceSimple / sliceRange
+// sliceSimple <- "[" integer "]"
+// sliceRange <- "[" integer? ":" integer? "]"
 // integer <- "-"? [0-9]+
 // PathExpression <- itemPath
 // itemPath <- "/"? pathStep ("/" pathStep)*
@@ -129,10 +173,10 @@ public enum Modifier {
 // predicateValue <- attributeValue / functionValue / stringValue
 // attributeValue <- "@" identifier
 // functionValue <- identifier "(" ItemPathExpression ")"
-// relation <- "beginswith"
-//           / "contains"
-//           / "endswith"
-//           / "matches"
+// relation <- beginswith
+//           / endswith
+//           / contains
+//           / matches
 //           / "="
 //           / "!="
 //           / "<="
@@ -142,25 +186,27 @@ public enum Modifier {
 // modifier <- "[" [isndl] "]"
 // stringValue <- (quotedString / unquotedString)+
 // quotedString <- '"' ([^"] / "\"")* '"'
-// unquotedString <- !(reservedWord space) [0-9a-zA-Z_]+
-// reservedWord <- "union"
-//               / "except"
-//               / "intersect"
-//               / "and"
-//               / "or"
-//               / "not"
-//               / "beginswith"
-//               / "contains"
-//               / "endswith"
-//               / "like"
-//               / "matches"
-//               / "="
-//               / "!="
-//               / "<="
-//               / ">="
-//               / "<"
-//               / ">"
-// identifier <- [a-zA-Z_][0-9a-zA-Z_]*
+// unquotedString <- !keyword identRest+
+// identifier <- identStart identRest*
+// identStart <- [a-zA-Z_]
+// identRest <- [0-9a-zA-Z_]
+// keyword <- relation
+//          / union
+//          / except
+//          / intersect
+//          / and
+//          / or
+//          / not
+// union <- "union" !identRest
+// except <- "except" !identRest
+// intersect <- "intersect" !identRest
+// and <- "and" !identRest
+// or <- "or" !identRest
+// not <- "not" !identRest
+// beginswith <- "beginswith" !identRest
+// endswith <- "endswith" !identRest
+// contains <- "contains" !identRest
+// matches <- "matches" !identRest
 // spaces <- space*
 // space <- [ \t\n\r]
 //
@@ -208,14 +254,6 @@ struct CharacterStream {
         self.pos = string.startIndex
     }
 
-    func mark() -> String.Index {
-        return pos
-    }
-
-    mutating func reset(_ pos: String.Index) {
-        self.pos = pos
-    }
-
     mutating func next() -> Character? {
         guard pos < string.endIndex else {
             return nil
@@ -255,6 +293,8 @@ struct ParseError: Error {
     var message: String
 }
 
+// TODO: maybe change to a struct and make mark return a parser so we
+// can easily backtrack tokens on error.
 public class Parser {
     var tokens: [Token]
     var chars: CharacterStream
@@ -281,7 +321,7 @@ public class Parser {
         skipWhitespace()
         let path = try parseExceptPaths()
         skipWhitespace()
-        if skipWord("union") {
+        if skipUnion() {
             let right = try parseUnionPaths()
             return PathExpression.union(path, right)
         }
@@ -292,7 +332,7 @@ public class Parser {
         skipWhitespace()
         let path = try parseIntersectPaths()
         skipWhitespace()
-        if skipWord("except") {
+        if skipExcept() {
             let right = try parseExceptPaths()
             return PathExpression.except(path, right)
         }
@@ -303,11 +343,74 @@ public class Parser {
         skipWhitespace()
         let path = try parsePathExpression()
         skipWhitespace()
-        if skipWord("intersect") {
+        if skipIntersect() {
             let right = try parseIntersectPaths()
             return PathExpression.intersect(path, right)
         }
         return path
+    }
+
+    private func parseSlice() throws -> Slice {
+        let pos = mark()
+
+        if let slice = try? parseSliceSimple() {
+            return slice
+        }
+
+        reset(pos)
+
+        return try parseSliceRange()
+    }
+
+    private func parseSliceSimple() throws -> Slice {
+        guard skipPrefix("[") else {
+            throw error("expected '['")
+        }
+
+        let start = try parseInteger()
+
+        guard skipPrefix("]") else {
+            throw error("expected ']'")
+        }
+
+        return Slice(start: start, end: nil)
+    }
+
+    private func parseSliceRange() throws -> Slice {
+        guard skipPrefix("[") else {
+            throw error("expected '['")
+        }
+
+        let start = try? parseInteger()
+
+        guard skipPrefix(":") else {
+            throw error("expected ':'")
+        }
+
+        let end = try? parseInteger()
+
+        guard skipPrefix("]") else {
+            throw error("expected ']'")
+        }
+
+        return Slice(start: start, end: end)
+    }
+
+    private func parseInteger() throws -> Int {
+        var value = 0
+        var sign = 1
+
+        if skipPrefix("-") {
+            sign = -1
+        }
+
+        while let c = chars.peek(), "0" <= c && c <= "9" {
+            value *= 10
+            value += Int(String(c))!
+            _ = chars.next()
+        }
+
+        return value * sign
     }
 
     private func parsePathExpression() throws -> PathExpression {
@@ -317,26 +420,477 @@ public class Parser {
     }
 
     private func parseItemPath() throws -> Path {
-        // START HERE TOMORROW
-        fatalError("todo")
+        var absolute = false
+        if skipPrefix("/") {
+            absolute = true
+        }
+
+        var steps: [Step] = []
+        try steps.append(parsePathStep())
+
+        while skipPrefix("/") {
+            try steps.append(parsePathStep())
+        }
+
+        return Path(absolute: absolute, steps: steps)
     }
 
-    // like skipPrefix but the character after s must be whitespace
-    private func skipWord(_ s: String) -> Bool {
-        let start = chars.mark()
+    private func parsePathStep() throws -> Step {
+        let axis = (try? parseAxis()) ?? .child
+        let predicate = try parseOrPredicates()
 
-        if skipPrefix(s) {
-            if let c = chars.peek(), c.isWhitespace {
-                return true
+        var slice: Slice?
+        if hasPrefix("[") {
+            slice = try parseSlice()
+        }
+
+        return Step(axis: axis, predicate: predicate, slice: slice)
+    }
+
+    private func parseAxis() throws -> Axis {
+        if skipPrefix("ancestor-or-self::") {
+            return .ancestorOrSelf
+        } else if skipPrefix("ancestor::") {
+            return .ancestor
+        } else if skipPrefix("child::") {
+            return .child
+        } else if skipPrefix("descendant-or-self::") {
+            return .descendantOrSelf
+        } else if skipPrefix("descendant::") {
+            return .descendant
+        } else if skipPrefix("following-sibling::") {
+            return .followingSibling
+        } else if skipPrefix("following::") {
+            return .following
+        } else if skipPrefix("parent::") {
+            return .parent
+        } else if skipPrefix("self::") {
+            return .self
+        } else if skipPrefix("//") {
+            return .descendantOrSelfShortcut
+        } else if skipPrefix("/") {
+            return .descendantShortcut
+        } else if skipPrefix("..") {
+            return .parentShortcut
+        } else if skipPrefix(".") {
+            return .childShortcut
+        }
+
+        throw error("expected axis")
+    }
+
+    private func parseOrPredicates() throws -> Predicate {
+        skipWhitespace()
+        let predicate = try parseAndPredicates()
+
+        skipWhitespace()
+        if skipOr() {
+            skipWhitespace()
+            let right = try parseOrPredicates()
+            return .or(predicate, right)
+        }
+
+        return predicate
+    }
+
+    private func parseAndPredicates() throws -> Predicate {
+        skipWhitespace()
+        let predicate = try parseNotPredicate()
+
+        skipWhitespace()
+        if skipAnd() {
+            skipWhitespace()
+            let right = try parseAndPredicates()
+            return .and(predicate, right)
+        }
+
+        return predicate
+    }
+
+    private func parseNotPredicate() throws -> Predicate {
+        var count = 0
+
+        while skipWhitespace() && skipNot() {
+            count += 1
+        }
+
+        skipWhitespace()
+        let predicate = try parsePredicateExpression()
+
+        if count % 2 == 0 {
+            return predicate
+        } else {
+            return .not(predicate)
+        }
+    }
+
+    private func parsePredicateExpression() throws -> Predicate {
+        skipWhitespace()
+        if skipPrefix("(") {
+            let predicate = try parseOrPredicates()
+            skipWhitespace()
+            guard skipPrefix(")") else {
+                throw error("expected ')'")
+            }
+            return predicate
+        }
+
+        return try parseComparisonPredicate()
+    }
+
+    private func parseComparisonPredicate() throws -> Predicate {
+        skipWhitespace()
+        if skipPrefix("*") {
+            return .any
+        }
+
+        let pos = mark()
+
+        do {
+            let left = (try? parsePredicateValue()) ?? .getAttribute("text")
+            let relation = (try? parseRelation()) ?? .contains
+            let modifier = (try? parseModifier()) ?? .caseInsensitive
+            let right = try parsePredicateValue()
+
+            return .comparison(left, relation, modifier, right)
+        } catch {
+            reset(pos)
+            return try .comparison(.getAttribute("text"), .contains, .caseInsensitive, parsePredicateValue())
+        }
+    }
+
+    private func parsePredicateValue() throws -> Value {
+        let pos = mark()
+
+        if let attribute = try? parseAttributeValue() {
+            return attribute
+        }
+
+        reset(pos)
+
+        if let function = try? parseFunctionValue() {
+            return function
+        }
+
+        reset(pos)
+
+        if let string = try? parseStringValue() {
+            return string
+        }
+
+        reset(pos)
+
+        throw error("expected predicate value")
+    }
+
+    private func parseAttributeValue() throws -> Value {
+        guard skipPrefix("@") else {
+            throw error("expected '@'")
+        }
+
+        let name = try parseIdentifier()
+
+        return .getAttribute(name)
+    }
+
+    private func parseFunctionValue() throws -> Value {
+        let name = try parseIdentifier()
+
+        guard skipPrefix("(") else {
+            throw error("expected '('")
+        }
+
+        let expression = try parseItemPathExpression()
+
+        guard skipPrefix(")") else {
+            throw error("expected ')'")
+        }
+
+        return .function(name, expression)
+    }
+
+    private func parseRelation() throws -> Relation {
+        if skipBeginswith() {
+            return .beginsWith
+        } else if skipEndswith() {
+            return .endsWith
+        } else if skipContains() {
+            return .contains
+        } else if skipMatches() {
+            return .matches
+        } else if skipPrefix("=") {
+            return .equal
+        } else if skipPrefix("!=") {
+            return .notEqual
+        } else if skipPrefix("<=") {
+            return .lessThanOrEqual
+        } else if skipPrefix(">=") {
+            return .greaterThanOrEqual
+        } else if skipPrefix("<") {
+            return .lessThan
+        } else if skipPrefix(">") {
+            return .greaterThan
+        }
+
+        throw error("expected relation")
+    }
+
+    private func parseModifier() throws -> Modifier {
+        guard skipPrefix("[") else {
+            throw error("expected '['")
+        }
+
+        guard let c = chars.next() else {
+            throw error("expected modifier")
+        }
+
+        let modifier: Modifier
+        switch c {
+        case "i":
+            modifier = .caseInsensitive
+        case "s":
+            modifier = .caseSensitive
+        case "n":
+            modifier = .numericCompare
+        case "d":
+            modifier = .dateCompare
+        case "l":
+            modifier = .listCompare
+        default:
+            throw error("invalid modifier: \(c)")
+        }
+
+        guard skipPrefix("]") else {
+            throw error("expected ']'")
+        }
+
+        return modifier
+    }
+
+    private func parseStringValue() throws -> Value {
+        let pos = mark()
+
+        if let string = try? parseQuotedString() {
+            return .literal(string)
+        }
+
+        reset(pos)
+
+        if let string = try? parseUnquotedString() {
+            return .literal(string)
+        }
+
+        reset(pos)
+
+        throw error("expected string value")
+    }
+
+    private func parseQuotedString() throws -> String {
+        guard skipPrefix("\"") else {
+            throw error("expected '\"'")
+        }
+
+        var string = ""
+
+        while let c = chars.next() {
+            if c == "\"" {
+                return string
+            } else if c == "\\" {
+                guard let c = chars.next() else {
+                    throw error("expected character after '\\'")
+                }
+
+                switch c {
+                case "\"":
+                    string.append("\"")
+                case "\\":
+                    string.append("\\")
+                case "n":
+                    string.append("\n")
+                case "r":
+                    string.append("\r")
+                case "t":
+                    string.append("\t")
+                default:
+                    throw error("invalid escape sequence '\\\(c)'")
+                }
+            } else {
+                string.append(c)
             }
         }
 
-        chars.reset(start)
-        return false
+        throw error("expected '\"'")
+    }
+
+    private func parseUnquotedString() throws -> String {
+        if skipKeyword() {
+            throw error("unexpected keyword")
+        }
+
+        var s = try parseIdentRest()
+
+        while true {
+            let pos = mark()
+            guard let c = try? parseIdentRest() else {
+                reset(pos)
+                break
+            }
+
+            s.append(c)
+        }
+
+        return s
+    }
+
+    private func parseIdentifier() throws -> String {
+        var s = try parseIdentStart()
+
+        while true {
+            let pos = mark()
+            guard let c = try? parseIdentRest() else {
+                reset(pos)
+                break
+            }
+
+            s.append(c)
+        }
+
+        return s
+    }
+
+    private func parseIdentStart() throws -> String {
+        let c = chars.next()
+        guard let c else {
+            throw error("expected identifier, got EOF")
+        }
+
+        if "a" <= c && c <= "z" || "A" <= c && c <= "Z" || c == "_" {
+            return String(c)
+        } else {
+            throw error("expected identifier")
+        }
+    }
+
+    private func parseIdentRest() throws -> String {
+        let c = chars.next()
+        guard let c else {
+            throw error("expected identifier, got EOF")
+        }
+
+        if "0" <= c && c <= "9" || "a" <= c && c <= "z" || "A" <= c && c <= "Z" || c == "_" {
+            return String(c)
+        } else {
+            throw error("expected identifier")
+        }
+    }
+
+    private func skipKeyword() -> Bool {
+        let pos = mark()
+        if (try? parseRelation()) != nil {
+            return true
+        }
+
+        // not technically necessary because parseRelation() doesn't
+        // consume unless it matches, but that's an implementation detail
+        reset(pos)
+
+        return skipUnion() || skipExcept() || skipIntersect() || skipAnd() || skipOr() || skipNot()
+    }
+
+    private func skipUnion() -> Bool {
+        guard skipPrefix("union") else {
+            return false
+        }
+
+        return !matches { try parseIdentRest() }
+    }
+
+    private func skipExcept() -> Bool {
+        guard skipPrefix("except") else {
+            return false
+        }
+
+        return !matches { try parseIdentRest() }
+    }
+
+    private func skipIntersect() -> Bool {
+        guard skipPrefix("intersect") else {
+            return false
+        }
+
+        return !matches { try parseIdentRest() }
+    }
+
+    private func skipAnd() -> Bool {
+        guard skipPrefix("and") else {
+            return false
+        }
+
+        return !matches { try parseIdentRest() }
+    }
+
+    private func skipOr() -> Bool {
+        guard skipPrefix("or") else {
+            return false
+        }
+
+        return !matches { try parseIdentRest() }
+    }
+
+    private func skipNot() -> Bool {
+        guard skipPrefix("not") else {
+            return false
+        }
+
+        return !matches { try parseIdentRest() }
+    }
+
+    private func skipBeginswith() -> Bool {
+        guard skipPrefix("beginswith") else {
+            return false
+        }
+
+        return !matches { try parseIdentRest() }
+    }
+
+    private func skipEndswith() -> Bool {
+        guard skipPrefix("endswith") else {
+            return false
+        }
+
+        return !matches { try parseIdentRest() }
+    }
+
+    private func skipContains() -> Bool {
+        guard skipPrefix("contains") else {
+            return false
+        }
+
+        return !matches { try parseIdentRest() }
+    }
+
+    private func skipMatches() -> Bool {
+        guard skipPrefix("matches") else {
+            return false
+        }
+
+        return !matches { try parseIdentRest() }
+    }
+
+    private func matches(_ f: () throws -> String) -> Bool {
+        let pos = mark()
+        defer { reset(pos) }
+
+        do {
+            _ = try f()
+            return true
+        } catch {
+            return false
+        }
     }
 
     private func skipPrefix(_ s: String) -> Bool {
-        if chars.hasPrefix(s) {
+        if hasPrefix(s) {
             for _ in 0..<s.count {
                 _ = chars.next()
             }
@@ -345,16 +899,32 @@ public class Parser {
         return false
     }
 
-    private func skipWhitespace() {
+    private func hasPrefix(_ s: String) -> Bool {
+        return chars.hasPrefix(s)
+    }
+
+    @discardableResult
+    private func skipWhitespace() -> Bool {
         while let c = chars.peek(), c.isWhitespace {
             _ = chars.next()
         }
+
+        // always succeeds, useful for loop conditions.
+        return true
     }
 
     private func expectEOF() throws {
         guard chars.peek() == nil else {
             throw error("expected end of input")
         }
+    }
+
+    private func mark() -> String.Index {
+        return chars.pos
+    }
+
+    private func reset(_ pos: String.Index) {
+        chars.pos = pos
     }
 
     private func error(_ message: String) -> ParseError {
