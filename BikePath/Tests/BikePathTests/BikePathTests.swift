@@ -901,6 +901,34 @@ final class BikePathTests: XCTestCase {
 
     // Mark: - The kitchen sink
 
+    // TODO: add the special shorthand for type (e.g. project)
+
+    // func testMediumQuery() throws {
+    //     let p = Parser("//project//count(.*) = 0[0]")
+
+    //     let expected = PathExpression.location(
+    //         .path(Path(absolute: true, steps: [
+    //             Step(axis: .descendantShortcut, predicate: .comparison(
+    //                 .getAttribute("type"), .equal, .caseInsensitive, .literal("project")
+    //             )),
+    //             Step(axis: .descendantShortcut, predicate: .comparison(
+    //                 .function(Function(name: "count", arg: .path(Path(absolute: false, steps: [
+    //                     Step(axis: .selfShortcut, predicate: .any)
+    //                 ])))), .equal, .caseInsensitive, .literal("0")
+    //             ), slice: Slice(start: 0, end: nil)),
+    //         ]))
+    //     )
+
+    //     let actual = try p.parse()
+    //     XCTAssertEqual(expected, actual)
+    // }
+
+    // func testLargeQuery() throws {
+    //     let p = Parser("project *//@type task and not @done[0]")
+
+
+    // }
+
     func testHugeQuery() throws {
         let p = Parser("/child::@text contains [s] Foo Bar/following::(@dueDate <= [d] \"2019-01-01\" or @tag = longPast) and @assignee = Bob union /foo/..*/following-sibling::@text contains [s] Baz")
 
