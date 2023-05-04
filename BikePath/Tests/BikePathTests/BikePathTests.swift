@@ -156,6 +156,45 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
+    func testParseParentheticals() throws {
+        let p = Parser("(shoes or socks) and pants")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .and(
+                .or(
+                    .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("shoes")),
+                    .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
+                ),
+                .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("pants"))
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testComplicatedParentheticals() throws {
+        let p = Parser("(shoes or socks) and (not (not pants) or shorts)")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .and(
+                .or(
+                    .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("shoes")),
+                    .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
+                ),
+                .or(
+                    .not(.not(.comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("pants")))),
+                    .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("shorts"))
+                )
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    // Mark: - Relations
+
     func testParseRelationAndValue() throws {
         let p = Parser("= socks")
 
