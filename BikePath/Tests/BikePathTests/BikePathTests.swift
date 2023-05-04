@@ -226,4 +226,136 @@ final class BikePathTests: XCTestCase {
         let actual = try p.parse()
         XCTAssertEqual(expected, actual)
     }
+
+    // Mark: - Relations
+
+    func testBeginswith() throws {
+        let p = Parser("beginswith socks")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .beginsWith, .caseInsensitive, .literal("socks")
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testEndswith() throws {
+        let p = Parser("endswith socks")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .endsWith, .caseInsensitive, .literal("socks")
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testContains() throws {
+        let p = Parser("contains socks")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testMatches() throws {
+        let p = Parser("matches socks")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .matches, .caseInsensitive, .literal("socks")
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testEqual() throws {
+        let p = Parser("= socks")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .equal, .caseInsensitive, .literal("socks")
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testNotEqual() throws {
+        let p = Parser("!= socks")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .notEqual, .caseInsensitive, .literal("socks")
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testLessThanOrEqual() throws {
+        let p = Parser("<= socks")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .lessThanOrEqual, .caseInsensitive, .literal("socks")
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testGreaterThanOrEqual() throws {
+        let p = Parser(">= socks")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .greaterThanOrEqual, .caseInsensitive, .literal("socks")
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testLessThan() throws {
+        let p = Parser("< socks")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .lessThan, .caseInsensitive, .literal("socks")
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testGreaterThan() throws {
+        let p = Parser("> socks")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .greaterThan, .caseInsensitive, .literal("socks")
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
 }
