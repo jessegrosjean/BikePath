@@ -438,13 +438,23 @@ public class Parser {
             throw error("expected '['")
         }
 
+        var pos = mark()
+
         let start = try? parseInteger()
+        if start == nil {
+            reset(pos)
+        }
 
         guard skipPrefix(":") else {
             throw error("expected ':'")
         }
 
+        pos = mark()
+
         let end = try? parseInteger()
+        if end == nil {
+            reset(pos)
+        }
 
         guard skipPrefix("]") else {
             throw error("expected ']'")
@@ -459,6 +469,14 @@ public class Parser {
 
         if skipPrefix("-") {
             sign = -1
+        }
+
+        // There should be at least one digit.
+        if let c = chars.peek(), "0" <= c && c <= "9" {
+            value = Int(String(c))!
+            _ = chars.next()
+        } else {
+            throw error("expected digit")
         }
 
         while let c = chars.peek(), "0" <= c && c <= "9" {
@@ -635,11 +653,25 @@ public class Parser {
         skipWhitespace()
         let left = try parseFunctionOrValue()
 
-        skipWhitespace()
-        let relation = (try? parseRelation()) ?? .contains
+        let pos = mark()
 
         skipWhitespace()
-        let modifier = (try? parseModifier()) ?? .caseInsensitive
+        let relation: Relation
+        if let r = (try? parseRelation()) {
+            relation = r
+        } else {
+            reset(pos)
+            relation = .contains
+        }
+
+        skipWhitespace()
+        let modifier: Modifier
+        if let m = (try? parseModifier()) {
+            modifier = m
+        } else {
+            reset(pos)
+            modifier = .caseInsensitive
+        }
 
         skipWhitespace()
         let right = try parseFunctionOrValue()
@@ -651,8 +683,15 @@ public class Parser {
         skipWhitespace()
         let value = try parsePredicateValue()
 
+        let pos = mark()
         skipWhitespace()
-        let modifier = (try? parseModifier()) ?? .caseInsensitive
+        let modifier: Modifier
+        if let m = (try? parseModifier()) {
+            modifier = m
+        } else {
+            reset(pos)
+            modifier = .caseInsensitive
+        }
 
         if case .getAttribute(_) = value {
             return .comparison(value, nil, modifier, nil)
@@ -1118,7 +1157,7 @@ public class Parser {
     func error(_ message: String) -> ParseError {
         let line = chars.currentLine()
         let marker = String(repeating: " ", count: chars.col) + "^"
-        let message = "\n(input)\(chars.line):\(chars.col): syntax error: \(message)\n\(line)\n\(marker)\n"
+        let message = "\n(input):\(chars.line):\(chars.col): syntax error: \(message)\n\(line)\n\(marker)\n"
 
         return ParseError(description: message)
     }

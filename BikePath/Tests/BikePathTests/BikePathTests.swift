@@ -412,4 +412,76 @@ final class BikePathTests: XCTestCase {
         let actual = try p.parse()
         XCTAssertEqual(expected, actual)
     }
+
+    // Mark: - Slices
+
+    func testParseSimpleSlice() throws {
+        let p = Parser("socks[1]")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")),
+                slice: Slice(start: 1)
+            ),
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseSliceRange() throws {
+        let p = Parser("socks[1:2]")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")),
+                slice: Slice(start: 1, end: 2)
+            ),
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseBeginlessSlice() throws {
+        let p = Parser("socks[:2]")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")),
+                slice: Slice(end: 2)
+            ),
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseEndlessSlice() throws {
+        let p = Parser("socks[1:]")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")),
+                slice: Slice(start: 1)
+            ),
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseFullSlice() throws {
+        let p = Parser("socks[:]")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")),
+                slice: Slice()
+            ),
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
 }
