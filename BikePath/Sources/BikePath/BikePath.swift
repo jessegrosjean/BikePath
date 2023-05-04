@@ -1,10 +1,15 @@
 import Foundation
 
-public indirect enum PathExpression: Equatable {
+public enum PathExpression: Equatable {
+    case function(Function)
+    case location(LocationExpression)
+}
+
+public indirect enum LocationExpression: Equatable {
     case path(Path)
-    case union(PathExpression, PathExpression)
-    case except(PathExpression, PathExpression)
-    case intersect(PathExpression, PathExpression)
+    case union(LocationExpression, LocationExpression)
+    case except(LocationExpression, LocationExpression)
+    case intersect(LocationExpression, LocationExpression)
 }
 
 public struct Path: Equatable {
@@ -70,7 +75,7 @@ public enum Axis: Equatable {
 }
 
 public indirect enum Predicate: Equatable {
-    case comparison(Value, Relation, Modifier, Value)
+    case comparison(Value, Relation?, Modifier, Value?)
     case or(Predicate, Predicate)
     case and(Predicate, Predicate)
     case not(Predicate)
@@ -80,7 +85,12 @@ public indirect enum Predicate: Equatable {
 public enum Value: Equatable {
     case literal(String)
     case getAttribute(String)
-    case function(String, PathExpression)
+    case function(Function)
+}
+
+public struct Function: Equatable {
+    var name: String
+    var arg: LocationExpression
 }
 
 public enum Relation: Equatable {
@@ -131,19 +141,19 @@ public enum Modifier: Equatable {
 //    qux <- spaces "qux"
 //
 //
-//
-// ItemPathExpression <- UnionPaths
-// UnionPaths <- ExceptPaths "union" UnionPaths
+// PathExpression <- functionValue / ItemLocationExpression
+// ItemLocationExpression <- UnionPaths
+// UnionPaths <- ExceptPaths union UnionPaths
 //             / ExceptPaths
-// ExceptPaths <- IntersectPaths "except" ExceptPaths
+// ExceptPaths <- IntersectPaths except ExceptPaths
 //              / IntersectPaths
-// IntersectPaths <- PathExpression "intersect" IntersectPaths
-//                 / PathExpression
+// IntersectPaths <- LocationExpression intersect IntersectPaths
+//                 / LocationExpression
 // slice <- sliceSimple / sliceRange
 // sliceSimple <- "[" integer "]"
 // sliceRange <- "[" integer? ":" integer? "]"
 // integer <- "-"? [0-9]+
-// PathExpression <- itemPath
+// LocationExpression <- itemPath
 // itemPath <- "/"? pathStep ("/" pathStep)*
 // pathStep <- axis? OrPredicates slice?
 // axis <- "ancestor-or-self::"
@@ -161,18 +171,24 @@ public enum Modifier: Equatable {
 //       / "/"
 //       / ".."
 //       / "."
-// OrPredicates <- AndPredicates "or" OrPredicates
+// OrPredicates <- AndPredicates or OrPredicates
 //               / AndPredicates
-// AndPredicates <- NotPredicate "and" AndPredicates
+// AndPredicates <- NotPredicate and AndPredicates
 //                / NotPredicate
-// NotPredicate <- "not"* PredicateExpression
+// NotPredicate <- not* PredicateExpression
 // PredicateExpression <- "(" OrPredicates ")"
 //                      / ComparisonPredicate
 // ComparisonPredicate <- "*"
-//                      / predicateValue? relation? modifier? predicateValue
-// predicateValue <- attributeValue / functionValue / stringValue
+//                      / MultiValueComparison
+//                      / SingleValueComparison  -- "@foo" tests the presence of @foo, but "foo" evaluates to "@text contains [i] foo"
+//                      / RelationComparison
+// MultiValueComparison <- functionOrValue relation? modifier? functionOrValue
+// SingleValueComparison <- predicateValue modifier?
+// RelationComparison <- relation? modifier? functionOrValue
+// functionOrValue <- functionValue / predicateValue
+// predicateValue <- attributeValue / stringValue
 // attributeValue <- "@" identifier
-// functionValue <- identifier "(" ItemPathExpression ")"
+// functionValue <- identifier "(" ItemLocationExpression ")"
 // relation <- beginswith
 //           / endswith
 //           / contains
@@ -325,47 +341,68 @@ public class Parser {
     }
 
     func parse() throws -> PathExpression {
-        let path = try parseItemPathExpression()
+        skipWhitespace()
+        let expr = try parsePathExpression()
         skipWhitespace()
         try expectEOF()
-        return path
+        return expr
     }
 
-    func parseItemPathExpression() throws -> PathExpression {
+    func parsePathExpression() throws -> PathExpression {
+        let pos = mark()
+
+        skipWhitespace()
+        if let f = try? parseFunction() {
+            return .function(f)
+        }
+
+        reset(pos)
+
+        skipWhitespace()
+        if let l = try? parseLocationExpression() {
+            return .location(l)
+        }
+
+        reset(pos)
+
+        throw error("expected location expression or function call")
+    }
+
+    func parseItemLocationExpression() throws -> LocationExpression {
         skipWhitespace()
         let path = try parseUnionPaths()
         return path
     }
 
-    func parseUnionPaths() throws -> PathExpression {
+    func parseUnionPaths() throws -> LocationExpression {
         skipWhitespace()
         let path = try parseExceptPaths()
         skipWhitespace()
         if skipUnion() {
             let right = try parseUnionPaths()
-            return PathExpression.union(path, right)
+            return LocationExpression.union(path, right)
         }
         return path
     }
 
-    func parseExceptPaths() throws -> PathExpression {
+    func parseExceptPaths() throws -> LocationExpression {
         skipWhitespace()
         let path = try parseIntersectPaths()
         skipWhitespace()
         if skipExcept() {
             let right = try parseExceptPaths()
-            return PathExpression.except(path, right)
+            return LocationExpression.except(path, right)
         }
         return path
     }
 
-    func parseIntersectPaths() throws -> PathExpression {
+    func parseIntersectPaths() throws -> LocationExpression {
         skipWhitespace()
-        let path = try parsePathExpression()
+        let path = try parseLocationExpression()
         skipWhitespace()
         if skipIntersect() {
             let right = try parseIntersectPaths()
-            return PathExpression.intersect(path, right)
+            return LocationExpression.intersect(path, right)
         }
         return path
     }
@@ -433,10 +470,10 @@ public class Parser {
         return value * sign
     }
 
-    func parsePathExpression() throws -> PathExpression {
+    func parseLocationExpression() throws -> LocationExpression {
         skipWhitespace()
         let path = try parseItemPath()
-        return PathExpression.path(path)
+        return LocationExpression.path(path)
     }
 
     func parseItemPath() throws -> Path {
@@ -559,15 +596,44 @@ public class Parser {
     }
 
     func parseComparisonPredicate() throws -> Predicate {
+        let pos = mark()
+
         skipWhitespace()
         if skipPrefix("*") {
             return .any
         }
 
-        let pos = mark()
+        // not really necessary, skipPrefix never consumes,
+        // and skipWhitespace is idempotent.
+        reset(pos)
 
         skipWhitespace()
-        let left = (try? parsePredicateValue()) ?? .getAttribute("text")
+        if let predicate = try? parseMultiValueComparison() {
+            return predicate
+        }
+
+        reset(pos)
+
+        skipWhitespace()
+        if let predicate = try? parseSingleValueComparison() {
+            return predicate
+        }
+
+        reset(pos)
+
+        skipWhitespace()
+        if let predicate = try? parseRelationComparison() {
+            return predicate
+        }
+
+        reset(pos)
+
+        throw error("expected comparison predicate")
+    }
+
+    func parseMultiValueComparison() throws -> Predicate {
+        skipWhitespace()
+        let left = try parseFunctionOrValue()
 
         skipWhitespace()
         let relation = (try? parseRelation()) ?? .contains
@@ -575,16 +641,56 @@ public class Parser {
         skipWhitespace()
         let modifier = (try? parseModifier()) ?? .caseInsensitive
 
-        do {
-            skipWhitespace()
-            let right = try parsePredicateValue()
+        skipWhitespace()
+        let right = try parseFunctionOrValue()
 
-            return .comparison(left, relation, modifier, right)
-        } catch {
-            reset(pos)
-            skipWhitespace()
-            return try .comparison(.getAttribute("text"), .contains, .caseInsensitive, parsePredicateValue())
+        return .comparison(left, relation, modifier, right)
+    }
+
+    func parseSingleValueComparison() throws -> Predicate {
+        skipWhitespace()
+        let value = try parsePredicateValue()
+
+        skipWhitespace()
+        let modifier = (try? parseModifier()) ?? .caseInsensitive
+
+        if case .getAttribute(_) = value {
+            return .comparison(value, nil, modifier, nil)
+        } else {
+            return .comparison(.getAttribute("text"), .contains, modifier, value)
         }
+    }
+
+
+    func parseRelationComparison() throws -> Predicate {
+        skipWhitespace()
+        let relation = (try? parseRelation()) ?? .contains
+
+        skipWhitespace()
+        let modifier = (try? parseModifier()) ?? .caseInsensitive
+
+        skipWhitespace()
+        let right = try parseFunctionOrValue()
+
+        return .comparison(.getAttribute("text"), relation, modifier, right)
+    }
+
+    func parseFunctionOrValue() throws -> Value {
+        let pos = mark()
+
+        if let value = try? parseFunction() {
+            return .function(value)
+        }
+
+        reset(pos)
+
+        if let function = try? parsePredicateValue() {
+            return function
+        }
+
+        reset(pos)
+
+        throw error("expected value or function")
     }
 
     func parsePredicateValue() throws -> Value {
@@ -592,12 +698,6 @@ public class Parser {
 
         if let attribute = try? parseAttributeValue() {
             return attribute
-        }
-
-        reset(pos)
-
-        if let function = try? parseFunctionValue() {
-            return function
         }
 
         reset(pos)
@@ -621,20 +721,20 @@ public class Parser {
         return .getAttribute(name)
     }
 
-    func parseFunctionValue() throws -> Value {
+    func parseFunction() throws -> Function {
         let name = try parseIdentifier()
 
         guard skipPrefix("(") else {
             throw error("expected '('")
         }
 
-        let expression = try parseItemPathExpression()
+        let expression = try parseItemLocationExpression()
 
         guard skipPrefix(")") else {
             throw error("expected ')'")
         }
 
-        return .function(name, expression)
+        return Function(name: name, arg: expression)
     }
 
     func parseRelation() throws -> Relation {
@@ -957,7 +1057,7 @@ public class Parser {
         return !matches { try parseIdentRest() }
     }
 
-    func matches(_ f: () throws -> String) -> Bool {
+    func matches<T>(_ f: () throws -> T) -> Bool {
         let pos = mark()
         defer { reset(pos) }
 
