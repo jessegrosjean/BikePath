@@ -898,4 +898,45 @@ final class BikePathTests: XCTestCase {
         let actual = try p.parse()
         XCTAssertEqual(expected, actual)
     }
+
+    // Mark: - The kitchen sink
+
+    func testHugeQuery() throws {
+        let p = Parser("/child::@text contains [s] Foo Bar/following::(@dueDate <= [d] \"2019-01-01\" or @tag = longPast) and @assignee = Bob union /foo/..*/following-sibling::@text contains [s] Baz")
+
+        let expected = PathExpression.location(
+            .union(
+                .path(Path(absolute: true, steps: [
+                    Step(axis: .child, predicate: .comparison(
+                        .getAttribute("text"), .contains, .caseSensitive, .literal("Foo Bar"))
+                    ),
+                    Step(axis: .following, predicate: .and(
+                        .or(
+                            .comparison(
+                                .getAttribute("dueDate"), .lessThanOrEqual, .dateCompare, .literal("2019-01-01")
+                            ),
+                            .comparison(
+                                .getAttribute("tag"), .equal, .caseInsensitive, .literal("longPast")
+                            )
+                        ),
+                        .comparison(
+                            .getAttribute("assignee"), .equal, .caseInsensitive, .literal("Bob"))
+                        )
+                    ),
+                ])),
+                .path(Path(absolute: true, steps: [
+                    Step(axis: .child, predicate: .comparison(
+                        .getAttribute("text"), .contains, .caseInsensitive, .literal("foo"))
+                    ),
+                    Step(axis: .parentShortcut, predicate: .any),
+                    Step(axis: .followingSibling, predicate: .comparison(
+                        .getAttribute("text"), .contains, .caseSensitive, .literal("Baz"))
+                    ),
+                ]))
+            )
+        )
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
 }
