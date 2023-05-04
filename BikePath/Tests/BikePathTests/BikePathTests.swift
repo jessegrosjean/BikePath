@@ -5,6 +5,17 @@ final class BikePathTests: XCTestCase {
     
     // Mark: - Basic comparison expressions
 
+    func testAny() throws {
+        let p = Parser("*")
+        let actual = try p.parse()
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .any)
+        ])))
+
+        XCTAssertEqual(expected, actual)
+    }
+
     func testParsePredicateUnoquotedString() throws {
         let p = Parser("socks")
         let actual = try p.parse()
@@ -785,6 +796,65 @@ final class BikePathTests: XCTestCase {
                 )
             )
         )
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    // Mark: - Multi-step paths
+
+    func testMultiStepPath() throws {
+        let p = Parser("socks/shoes/pants")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
+            ),
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseInsensitive, .literal("shoes"))
+            ),
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseInsensitive, .literal("pants"))
+            ),
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testAbsoluteMultiStepPath() throws {
+        let p = Parser("/socks/shoes/pants")
+
+        let expected = PathExpression.location(.path(Path(absolute: true, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
+            ),
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseInsensitive, .literal("shoes"))
+            ),
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseInsensitive, .literal("pants"))
+            ),
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testMultiStepPathsWithFullComparisons() throws {
+        let p = Parser("/@tag contains [s] Done/@dueDate < \"2019-01-01\"/@text = shoes")
+
+        let expected = PathExpression.location(.path(Path(absolute: true, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("tag"), .contains, .caseSensitive, .literal("Done")
+            )),
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("dueDate"), .lessThan, .caseInsensitive, .literal("2019-01-01")
+            )),
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .equal, .caseInsensitive, .literal("shoes")
+            )),
+        ])))
 
         let actual = try p.parse()
         XCTAssertEqual(expected, actual)

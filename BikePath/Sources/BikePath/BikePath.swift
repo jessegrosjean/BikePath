@@ -180,7 +180,7 @@ public enum Modifier: Equatable {
 //                      / ComparisonPredicate
 // ComparisonPredicate <- "*"
 //                      / MultiValueComparison
-//                      / SingleValueComparison  -- "@foo" tests the presence of @foo, but "foo" evaluates to "@text contains [i] foo"
+//                      / SingleValueComparison  -- "@foo" tests the presence of @foo, but "foo" expands to "@text contains [i] foo"
 //                      / RelationComparison
 // MultiValueComparison <- functionOrValue relation? modifier? functionOrValue
 // SingleValueComparison <- predicateValue modifier?
