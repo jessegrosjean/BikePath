@@ -358,7 +358,7 @@ public class Parser {
         reset(pos)
 
         skipWhitespace()
-        if let l = try? parseLocationExpression() {
+        if let l = try? parseItemLocationExpression() {
             return .location(l)
         }
 

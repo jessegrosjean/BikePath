@@ -681,4 +681,93 @@ final class BikePathTests: XCTestCase {
         let actual = try p.parse()
         XCTAssertEqual(expected, actual)
     }
+
+    // Mark: - Set operators
+
+    func testParseUnion() throws {
+        let p = Parser("socks union shoes union pants")
+
+        let expected = PathExpression.location(
+            .union(
+                .path(Path(absolute: false, steps: [
+                    Step(axis: .child, predicate: .comparison(
+                        .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
+                    ),
+                ])),
+                .union(
+                    .path(Path(absolute: false, steps: [
+                        Step(axis: .child, predicate: .comparison(
+                            .getAttribute("text"), .contains, .caseInsensitive, .literal("shoes"))
+                        ),
+                    ])),
+                    .path(Path(absolute: false, steps: [
+                        Step(axis: .child, predicate: .comparison(
+                            .getAttribute("text"), .contains, .caseInsensitive, .literal("pants"))
+                        ),
+                    ]))
+                )
+            )
+        )
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseExcept() throws {
+        let p = Parser("socks except shoes except pants")
+
+        let expected = PathExpression.location(
+            .except(
+                .path(Path(absolute: false, steps: [
+                    Step(axis: .child, predicate: .comparison(
+                        .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
+                    ),
+                ])),
+                .except(
+                    .path(Path(absolute: false, steps: [
+                        Step(axis: .child, predicate: .comparison(
+                            .getAttribute("text"), .contains, .caseInsensitive, .literal("shoes"))
+                        ),
+                    ])),
+                    .path(Path(absolute: false, steps: [
+                        Step(axis: .child, predicate: .comparison(
+                            .getAttribute("text"), .contains, .caseInsensitive, .literal("pants"))
+                        ),
+                    ]))
+                )
+            )
+        )
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseIntersect() throws {
+        let p = Parser("socks intersect shoes intersect pants")
+
+        let expected = PathExpression.location(
+            .intersect(
+                .path(Path(absolute: false, steps: [
+                    Step(axis: .child, predicate: .comparison(
+                        .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
+                    ),
+                ])),
+                .intersect(
+                    .path(Path(absolute: false, steps: [
+                        Step(axis: .child, predicate: .comparison(
+                            .getAttribute("text"), .contains, .caseInsensitive, .literal("shoes"))
+                        ),
+                    ])),
+                    .path(Path(absolute: false, steps: [
+                        Step(axis: .child, predicate: .comparison(
+                            .getAttribute("text"), .contains, .caseInsensitive, .literal("pants"))
+                        ),
+                    ]))
+                )
+            )
+        )
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
 }
