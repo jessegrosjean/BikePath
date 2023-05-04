@@ -36,7 +36,6 @@ public enum Axis: Equatable {
     case `self`
     case selfShortcut
     case child
-    case childShortcut
     case descendant
     case descendantShortcut
     case descendantOrSelf
@@ -56,7 +55,7 @@ public enum Axis: Equatable {
             return .child
         case .self, .selfShortcut:
             return .self
-        case .child, .childShortcut:
+        case .child:
             return .parent
         case .descendant, .descendantShortcut:
             return .ancestor
@@ -363,8 +362,6 @@ public class Parser {
             return .location(l)
         }
 
-        reset(pos)
-
         throw error("expected location expression or function call")
     }
 
@@ -537,6 +534,10 @@ public class Parser {
             return .followingSibling
         } else if skipPrefix("following::") {
             return .following
+        } else if skipPrefix("preceding-sibling::") {
+            return .precedingSibling
+        } else if skipPrefix("preceding::") {
+            return .preceding
         } else if skipPrefix("parent::") {
             return .parent
         } else if skipPrefix("self::") {
@@ -548,7 +549,7 @@ public class Parser {
         } else if skipPrefix("..") {
             return .parentShortcut
         } else if skipPrefix(".") {
-            return .childShortcut
+            return .selfShortcut
         }
 
         throw error("expected axis")
