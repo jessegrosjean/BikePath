@@ -171,7 +171,7 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    func testFullComparisonPredicate() throws {
+    func testParseFullComparisonPredicate() throws {
         let p = Parser("@tag = [s] socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
@@ -186,7 +186,7 @@ final class BikePathTests: XCTestCase {
 
     // Mark: - Values
 
-    func testAttribute() throws {
+    func testParseAttribute() throws {
         let p = Parser("@tag")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
@@ -199,7 +199,7 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    func testFunction() throws {
+    func testParseFunction() throws {
         let p = Parser("count(@tag)")
 
         let expected = PathExpression.function(Function(name: "count", arg: .path(
@@ -214,7 +214,7 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    func testString() throws {
+    func testParseString() throws {
         let p = Parser("socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
@@ -229,7 +229,7 @@ final class BikePathTests: XCTestCase {
 
     // Mark: - Relations
 
-    func testBeginswith() throws {
+    func testParseBeginswith() throws {
         let p = Parser("beginswith socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
@@ -242,7 +242,7 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    func testEndswith() throws {
+    func testParseEndswith() throws {
         let p = Parser("endswith socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
@@ -255,7 +255,7 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    func testContains() throws {
+    func testParseContains() throws {
         let p = Parser("contains socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
@@ -268,7 +268,7 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    func testMatches() throws {
+    func testParseMatches() throws {
         let p = Parser("matches socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
@@ -281,7 +281,7 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    func testEqual() throws {
+    func testParseEqual() throws {
         let p = Parser("= socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
@@ -294,7 +294,7 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    func testNotEqual() throws {
+    func testParseNotEqual() throws {
         let p = Parser("!= socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
@@ -307,7 +307,7 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    func testLessThanOrEqual() throws {
+    func testParseLessThanOrEqual() throws {
         let p = Parser("<= socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
@@ -320,7 +320,7 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    func testGreaterThanOrEqual() throws {
+    func testParseGreaterThanOrEqual() throws {
         let p = Parser(">= socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
@@ -333,7 +333,7 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    func testLessThan() throws {
+    func testParseLessThan() throws {
         let p = Parser("< socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
@@ -346,12 +346,66 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    func testGreaterThan() throws {
+    func testParseGreaterThan() throws {
         let p = Parser("> socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
             Step(axis: .child, predicate: .comparison(
                 .getAttribute("text"), .greaterThan, .caseInsensitive, .literal("socks")
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    // Mark: - Modifiers
+
+    func testParseCaseInsensitive() throws {
+        let p = Parser("[i] socks")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseCaseSensitive() throws {
+        let p = Parser("[s] socks")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseSensitive, .literal("socks")
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseNumericCompare() throws {
+        let p = Parser("[n] 123")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .numericCompare, .literal("123")
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseDateCompare() throws {
+        let p = Parser("[d] 2019-01-01")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .getAttribute("text"), .contains, .dateCompare, .literal("2019-01-01")
             ))
         ])))
 
