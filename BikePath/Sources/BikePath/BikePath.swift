@@ -566,15 +566,23 @@ public class Parser {
 
         let pos = mark()
 
+        skipWhitespace()
+        let left = (try? parsePredicateValue()) ?? .getAttribute("text")
+
+        skipWhitespace()
+        let relation = (try? parseRelation()) ?? .contains
+
+        skipWhitespace()
+        let modifier = (try? parseModifier()) ?? .caseInsensitive
+
         do {
-            let left = (try? parsePredicateValue()) ?? .getAttribute("text")
-            let relation = (try? parseRelation()) ?? .contains
-            let modifier = (try? parseModifier()) ?? .caseInsensitive
+            skipWhitespace()
             let right = try parsePredicateValue()
 
             return .comparison(left, relation, modifier, right)
         } catch {
             reset(pos)
+            skipWhitespace()
             return try .comparison(.getAttribute("text"), .contains, .caseInsensitive, parsePredicateValue())
         }
     }
