@@ -199,7 +199,26 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    func testParseFunction() throws {
+    func testParseFunctionValue() throws {
+        let p = Parser("downcase(@text) contains socks")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, predicate: .comparison(
+                .function(Function(name: "downcase", arg: .path(
+                    Path(absolute: false, steps: [
+                        Step(axis: .child, predicate: .comparison(
+                            .getAttribute("text"), nil, .caseInsensitive, nil
+                        )),
+                    ])
+                ))), .contains, .caseInsensitive, .literal("socks")
+            ))
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseFunctionExpression() throws {
         let p = Parser("count(@tag)")
 
         let expected = PathExpression.function(Function(name: "count", arg: .path(

@@ -140,7 +140,8 @@ public enum Modifier: Equatable {
 //    qux <- spaces "qux"
 //
 //
-// PathExpression <- functionValue / ItemLocationExpression
+// PathExpression <- functionValue !.
+//                 / ItemLocationExpression !.
 // ItemLocationExpression <- UnionPaths
 // UnionPaths <- ExceptPaths union UnionPaths
 //             / ExceptPaths
@@ -340,10 +341,7 @@ public class Parser {
     }
 
     func parse() throws -> PathExpression {
-        skipWhitespace()
         let expr = try parsePathExpression()
-        skipWhitespace()
-        try expectEOF()
         return expr
     }
 
@@ -352,15 +350,22 @@ public class Parser {
 
         skipWhitespace()
         if let f = try? parseFunction() {
-            return .function(f)
+            skipWhitespace()
+            if isEOF() {
+                return .function(f)
+            }
         }
 
         reset(pos)
 
         skipWhitespace()
         if let l = try? parseItemLocationExpression() {
+            skipWhitespace()
+            try expectEOF()
             return .location(l)
         }
+
+        reset(pos)
 
         throw error("expected location expression or function call")
     }
@@ -654,7 +659,7 @@ public class Parser {
         skipWhitespace()
         let left = try parseFunctionOrValue()
 
-        let pos = mark()
+        var pos = mark()
 
         skipWhitespace()
         let relation: Relation
@@ -664,6 +669,8 @@ public class Parser {
             reset(pos)
             relation = .contains
         }
+
+        pos = mark()
 
         skipWhitespace()
         let modifier: Modifier
@@ -1142,9 +1149,13 @@ public class Parser {
     }
 
     func expectEOF() throws {
-        guard chars.peek() == nil else {
+        guard isEOF() else {
             throw error("expected end of input")
         }
+    }
+
+    func isEOF() -> Bool {
+        return chars.peek() == nil
     }
 
     func mark() -> CharacterStream {
