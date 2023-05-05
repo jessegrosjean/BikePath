@@ -68,6 +68,8 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
+    // Mark: - Boolean operators
+
     func testParsePredicateNot() throws {
         let p = Parser("not socks")
 
@@ -193,7 +195,52 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    // Mark: - Relations
+    // Mark: - Step tests
+
+    func testParseTypeAndPredicate() throws {
+        let p = Parser("heading inbox")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, type: .heading, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseInsensitive, .literal("inbox"))
+            )
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseTypeOnly() throws {
+        let p = Parser("heading")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, type: .heading, predicate: .any)
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParsePredicateOnly() throws {
+        let p = Parser("inbox")
+
+        let expected = PathExpression.location(.path(Path(absolute: false, steps: [
+            Step(axis: .child, type: .any, predicate: .comparison(
+                .getAttribute("text"), .contains, .caseInsensitive, .literal("inbox"))
+            )
+        ])))
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testPredicateBeforeTypeFails() throws {
+        let p = Parser("inbox heading")
+
+        XCTAssertThrowsError(try p.parse())
+    }
+
+    // Mark: - Basic predicates
 
     func testParseRelationAndValue() throws {
         let p = Parser("= socks")
