@@ -957,7 +957,10 @@ final class BikePathTests: XCTestCase {
         let r = s.range(of: "foo")!
         let v = s[r]
 
-        let expected = [Token(type: .unquotedString, range: r, value: v)]
+        let expected = [
+            Token(type: .unquotedString, range: r, value: v),
+            Token(type: .comparison, range: r, value: v),
+        ]
         let actual = p.tokens
 
         XCTAssertEqual(expected, actual)
@@ -978,10 +981,14 @@ final class BikePathTests: XCTestCase {
         let r3 = s.range(of: "baz")!
         let v3 = s[r3]
 
+        let r4 = s.range(of: "foo bar baz")!
+        let v4 = s[r4]
+
         let expected = [
             Token(type: .unquotedString, range: r1, value: v1),
             Token(type: .unquotedString, range: r2, value: v2),
             Token(type: .unquotedString, range: r3, value: v3),
+            Token(type: .comparison, range: r4, value: v4),
         ]
         let actual = p.tokens
 
@@ -997,7 +1004,10 @@ final class BikePathTests: XCTestCase {
         let r = s.range(of: "\"foo\"")!
         let v = s[r]
 
-        let expected = [Token(type: .quotedString, range: r, value: v)]
+        let expected = [
+            Token(type: .quotedString, range: r, value: v),
+            Token(type: .comparison, range: r, value: v),
+        ]
         let actual = p.tokens
 
         XCTAssertEqual(expected, actual)
@@ -1021,11 +1031,15 @@ final class BikePathTests: XCTestCase {
         let r4 = s.range(of: "\"qux\"")!
         let v4 = s[r4]
 
+        let r5 = s.range(of: "foo \"bar\" baz \"qux\"")!
+        let v5 = s[r5]
+
         let expected = [
             Token(type: .unquotedString, range: r1, value: v1),
             Token(type: .quotedString, range: r2, value: v2),
             Token(type: .unquotedString, range: r3, value: v3),
             Token(type: .quotedString, range: r4, value: v4),
+            Token(type: .comparison, range: r5, value: v5),
         ]
         let actual = p.tokens
 
@@ -1055,10 +1069,13 @@ final class BikePathTests: XCTestCase {
 
         let expected = [
             Token(type: .unquotedString, range: r1, value: v1),
+            Token(type: .comparison, range: r1, value: v1),
             Token(type: .boolean, range: r2, value: v2),
             Token(type: .unquotedString, range: r3, value: v3),
+            Token(type: .comparison, range: r3, value: v3),
             Token(type: .boolean, range: r4, value: v4),
             Token(type: .unquotedString, range: r5, value: v5),
+            Token(type: .comparison, range: r5, value: v5),
         ]
         let actual = p.tokens
 
@@ -1088,10 +1105,13 @@ final class BikePathTests: XCTestCase {
 
         let expected = [
             Token(type: .unquotedString, range: r1, value: v1),
+            Token(type: .comparison, range: r1, value: v1),
             Token(type: .boolean, range: r2, value: v2),
             Token(type: .unquotedString, range: r3, value: v3),
+            Token(type: .comparison, range: r3, value: v3),
             Token(type: .boolean, range: r4, value: v4),
             Token(type: .unquotedString, range: r5, value: v5),
+            Token(type: .comparison, range: r5, value: v5),
         ]
         let actual = p.tokens
 
@@ -1117,6 +1137,7 @@ final class BikePathTests: XCTestCase {
             Token(type: .boolean, range: r1, value: v1),
             Token(type: .boolean, range: r2, value: v2),
             Token(type: .unquotedString, range: r3, value: v3),
+            Token(type: .comparison, range: r3, value: v3),
         ]
         let actual = p.tokens
 
@@ -1146,10 +1167,13 @@ final class BikePathTests: XCTestCase {
 
         let expected = [
             Token(type: .unquotedString, range: r1, value: v1),
+            Token(type: .comparison, range: r1, value: v1),
             Token(type: .set, range: r2, value: v2),
             Token(type: .unquotedString, range: r3, value: v3),
+            Token(type: .comparison, range: r3, value: v3),
             Token(type: .set, range: r4, value: v4),
             Token(type: .unquotedString, range: r5, value: v5),
+            Token(type: .comparison, range: r5, value: v5),
         ]
         let actual = p.tokens
 
@@ -1179,10 +1203,13 @@ final class BikePathTests: XCTestCase {
 
         let expected = [
             Token(type: .unquotedString, range: r1, value: v1),
+            Token(type: .comparison, range: r1, value: v1),
             Token(type: .set, range: r2, value: v2),
             Token(type: .unquotedString, range: r3, value: v3),
+            Token(type: .comparison, range: r3, value: v3),
             Token(type: .set, range: r4, value: v4),
             Token(type: .unquotedString, range: r5, value: v5),
+            Token(type: .comparison, range: r5, value: v5),
         ]
         let actual = p.tokens
 
@@ -1212,10 +1239,13 @@ final class BikePathTests: XCTestCase {
 
         let expected = [
             Token(type: .unquotedString, range: r1, value: v1),
+            Token(type: .comparison, range: r1, value: v1),
             Token(type: .set, range: r2, value: v2),
             Token(type: .unquotedString, range: r3, value: v3),
+            Token(type: .comparison, range: r3, value: v3),
             Token(type: .set, range: r4, value: v4),
             Token(type: .unquotedString, range: r5, value: v5),
+            Token(type: .comparison, range: r5, value: v5),
         ]
         let actual = p.tokens
 
@@ -1237,6 +1267,7 @@ final class BikePathTests: XCTestCase {
         let expected = [
             Token(type: .axis, range: r1, value: v1),
             Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r2, value: v2),
         ]
         let actual = p.tokens
 
@@ -1270,8 +1301,10 @@ final class BikePathTests: XCTestCase {
             Token(type: .axis, range: r1, value: v1),
             Token(type: .axis, range: r2, value: v2),
             Token(type: .unquotedString, range: r3, value: v3),
+            Token(type: .comparison, range: r3, value: v3),
             Token(type: .boolean, range: r4, value: v4),
             Token(type: .unquotedString, range: r5, value: v5),
+            Token(type: .comparison, range: r5, value: v5),
         ]
         let actual = p.tokens
 
@@ -1302,9 +1335,11 @@ final class BikePathTests: XCTestCase {
         let expected = [
             Token(type: .axis, range: r1, value: v1),
             Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r2, value: v2),
             Token(type: .axis, range: r3, value: v3),
             Token(type: .axis, range: r4, value: v4),
             Token(type: .unquotedString, range: r5, value: v5),
+            Token(type: .comparison, range: r5, value: v5),
         ]
         let actual = p.tokens
 
@@ -1323,9 +1358,13 @@ final class BikePathTests: XCTestCase {
         let r2 = s.range(of: "shoes")!
         let v2 = s[r2]
 
+        let r3 = s.range(of: "beginswith shoes")!
+        let v3 = s[r3]
+
         let expected = [
             Token(type: .relation, range: r1, value: v1),
             Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r3, value: v3),
         ]
         let actual = p.tokens
 
@@ -1344,9 +1383,13 @@ final class BikePathTests: XCTestCase {
         let r2 = s.range(of: "shoes")!
         let v2 = s[r2]
 
+        let r3 = s.range(of: "endswith shoes")!
+        let v3 = s[r3]
+
         let expected = [
             Token(type: .relation, range: r1, value: v1),
             Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r3, value: v3),
         ]
         let actual = p.tokens
 
@@ -1365,9 +1408,13 @@ final class BikePathTests: XCTestCase {
         let r2 = s.range(of: "shoes")!
         let v2 = s[r2]
 
+        let r3 = s.range(of: "contains shoes")!
+        let v3 = s[r3]
+
         let expected = [
             Token(type: .relation, range: r1, value: v1),
             Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r3, value: v3),
         ]
         let actual = p.tokens
 
@@ -1386,9 +1433,13 @@ final class BikePathTests: XCTestCase {
         let r2 = s.range(of: "shoes")!
         let v2 = s[r2]
 
+        let r3 = s.range(of: "matches shoes")!
+        let v3 = s[r3]
+
         let expected = [
             Token(type: .relation, range: r1, value: v1),
             Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r3, value: v3),
         ]
         let actual = p.tokens
 
@@ -1407,9 +1458,13 @@ final class BikePathTests: XCTestCase {
         let r2 = s.range(of: "shoes")!
         let v2 = s[r2]
 
+        let r3 = s.range(of: "= shoes")!
+        let v3 = s[r3]
+
         let expected = [
             Token(type: .relation, range: r1, value: v1),
             Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r3, value: v3),
         ]
         let actual = p.tokens
 
@@ -1428,9 +1483,13 @@ final class BikePathTests: XCTestCase {
         let r2 = s.range(of: "shoes")!
         let v2 = s[r2]
 
+        let r3 = s.range(of: "!= shoes")!
+        let v3 = s[r3]
+
         let expected = [
             Token(type: .relation, range: r1, value: v1),
             Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r3, value: v3),
         ]
         let actual = p.tokens
 
@@ -1449,9 +1508,13 @@ final class BikePathTests: XCTestCase {
         let r2 = s.range(of: "shoes")!
         let v2 = s[r2]
 
+        let r3 = s.range(of: "<= shoes")!
+        let v3 = s[r3]
+
         let expected = [
             Token(type: .relation, range: r1, value: v1),
             Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r3, value: v3),
         ]
         let actual = p.tokens
 
@@ -1470,9 +1533,13 @@ final class BikePathTests: XCTestCase {
         let r2 = s.range(of: "shoes")!
         let v2 = s[r2]
 
+        let r3 = s.range(of: ">= shoes")!
+        let v3 = s[r3]
+
         let expected = [
             Token(type: .relation, range: r1, value: v1),
             Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r3, value: v3),
         ]
         let actual = p.tokens
 
@@ -1491,9 +1558,13 @@ final class BikePathTests: XCTestCase {
         let r2 = s.range(of: "shoes")!
         let v2 = s[r2]
 
+        let r3 = s.range(of: "< shoes")!
+        let v3 = s[r3]
+
         let expected = [
             Token(type: .relation, range: r1, value: v1),
             Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r3, value: v3),
         ]
         let actual = p.tokens
 
@@ -1512,9 +1583,138 @@ final class BikePathTests: XCTestCase {
         let r2 = s.range(of: "shoes")!
         let v2 = s[r2]
 
+        let r3 = s.range(of: "> shoes")!
+        let v3 = s[r3]
+
         let expected = [
             Token(type: .relation, range: r1, value: v1),
             Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r3, value: v3),
+        ]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseCaseInsensitiveToken() throws {
+        let s = "[i] shoes"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r1 = s.range(of: "[i]")!
+        let v1 = s[r1]
+
+        let r2 = s.range(of: "shoes")!
+        let v2 = s[r2]
+
+        let r3 = s.range(of: "[i] shoes")!
+        let v3 = s[r3]
+
+        let expected = [
+            Token(type: .modifier, range: r1, value: v1),
+            Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r3, value: v3),
+        ]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseCaseSensitiveToken() throws {
+        let s = "[s] shoes"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r1 = s.range(of: "[s]")!
+        let v1 = s[r1]
+
+        let r2 = s.range(of: "shoes")!
+        let v2 = s[r2]
+
+        let r3 = s.range(of: "[s] shoes")!
+        let v3 = s[r3]
+
+        let expected = [
+            Token(type: .modifier, range: r1, value: v1),
+            Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r3, value: v3),
+        ]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseNumericCompareToken() throws {
+        let s = "[n] shoes"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r1 = s.range(of: "[n]")!
+        let v1 = s[r1]
+
+        let r2 = s.range(of: "shoes")!
+        let v2 = s[r2]
+
+        let r3 = s.range(of: "[n] shoes")!
+        let v3 = s[r3]
+
+        let expected = [
+            Token(type: .modifier, range: r1, value: v1),
+            Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r3, value: v3),
+        ]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseDateCompareToken() throws {
+        let s = "[d] shoes"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r1 = s.range(of: "[d]")!
+        let v1 = s[r1]
+
+        let r2 = s.range(of: "shoes")!
+        let v2 = s[r2]
+
+        let r3 = s.range(of: "[d] shoes")!
+        let v3 = s[r3]
+
+        let expected = [
+            Token(type: .modifier, range: r1, value: v1),
+            Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r3, value: v3),
+        ]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseListCompareToken() throws {
+        let s = "[l] shoes"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r1 = s.range(of: "[l]")!
+        let v1 = s[r1]
+
+        let r2 = s.range(of: "shoes")!
+        let v2 = s[r2]
+
+        let r3 = s.range(of: "[l] shoes")!
+        let v3 = s[r3]
+
+        let expected = [
+            Token(type: .modifier, range: r1, value: v1),
+            Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r3, value: v3),
         ]
         let actual = p.tokens
 
@@ -1542,12 +1742,17 @@ final class BikePathTests: XCTestCase {
         let r4 = s.range(of: "bar")!
         let v4 = s[r4]
 
+        let r5 = s.range(of: "= bar")!
+        let v5 = s[r5]
+
         let expected = [
             Token(type: .unquotedString, range: r0, value: v0),
+            Token(type: .comparison, range: r0, value: v0),
             Token(type: .axis, range: r1, value: v1),
             Token(type: .type, range: r2, value: v2),
             Token(type: .relation, range: r3, value: v3),
             Token(type: .unquotedString, range: r4, value: v4),
+            Token(type: .comparison, range: r5, value: v5),
         ]
         let actual = p.tokens
 
@@ -1569,10 +1774,14 @@ final class BikePathTests: XCTestCase {
         let r3 = s.range(of: "@bar")!
         let v3 = s[r3]
 
+        let r4 = s.range(of: "@foo = @bar")!
+        let v4 = s[r4]
+
         let expected = [
             Token(type: .attribute, range: r1, value: v1),
             Token(type: .relation, range: r2, value: v2),
             Token(type: .attribute, range: r3, value: v3),
+            Token(type: .comparison, range: r4, value: v4),
         ]
         let actual = p.tokens
 
@@ -1603,13 +1812,19 @@ final class BikePathTests: XCTestCase {
         let r5 = s.range(of: "1")!
         let v5 = s[r5]
 
+        let r6 = s.range(of: "count(bar) = 1")!
+        let v6 = s[r6]
+
         let expected = [
             Token(type: .unquotedString, range: r0, value: v0),
+            Token(type: .comparison, range: r0, value: v0),
             Token(type: .axis, range: r1, value: v1),
             Token(type: .functionName, range: r2, value: v2),
             Token(type: .unquotedString, range: r3, value: v3),
+            Token(type: .comparison, range: r3, value: v3),
             Token(type: .relation, range: r4, value: v4),
             Token(type: .unquotedString, range: r5, value: v5),
+            Token(type: .comparison, range: r6, value: v6),
         ]
         let actual = p.tokens
 
@@ -1631,6 +1846,7 @@ final class BikePathTests: XCTestCase {
         let expected = [
             Token(type: .functionName, range: r1, value: v1),
             Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .comparison, range: r2, value: v2),
         ]
         let actual = p.tokens
 
@@ -1654,6 +1870,7 @@ final class BikePathTests: XCTestCase {
 
         let expected = [
             Token(type: .unquotedString, range: r1, value: v1),
+            Token(type: .comparison, range: r1, value: v1),
             Token(type: .axis, range: r2, value: v2),
             Token(type: .type, range: r3, value: v3),
         ]

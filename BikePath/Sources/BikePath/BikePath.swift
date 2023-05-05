@@ -210,7 +210,7 @@ public enum Modifier: Equatable {
 //           / "<"
 //           / ">"
 // modifier <- "[" [isndl] "]"
-// stringValue <- ((quotedString / unquotedString) spaces)+
+// stringValue <- (quotedString / unquotedString) (spaces (quotedString / unquotedString))*
 // quotedString <- '"' ([^"] / "\"")* '"'
 // unquotedString <- !keyword ([0-9] / [~`!#$%^&*-+=\{\}|\\;',.?-] / identifier)
 // identifier <- identStart identRest*
@@ -283,6 +283,8 @@ public enum TokenType: Equatable {
     case unquotedString
     case boolean
     case set
+    case modifier
+    case comparison
 }
 
 public struct Token: Equatable {
@@ -684,7 +686,9 @@ public class Parser {
         let pos = mark()
 
         skipWhitespace()
+        var start = mark()
         if skipPrefix("*") {
+            emit(.comparison, startingAt: start)
             return .any
         }
 
@@ -693,21 +697,27 @@ public class Parser {
         reset(pos)
 
         skipWhitespace()
+        start = mark()
         if let predicate = try? parseMultiValueComparison() {
+            emit(.comparison, startingAt: start)
             return predicate
         }
 
         reset(pos)
 
         skipWhitespace()
+        start = mark()
         if let predicate = try? parseSingleValueComparison() {
+            emit(.comparison, startingAt: start)
             return predicate
         }
 
         reset(pos)
 
         skipWhitespace()
+        start = mark()
         if let predicate = try? parseRelationComparison() {
+            emit(.comparison, startingAt: start)
             return predicate
         }
 
@@ -876,6 +886,7 @@ public class Parser {
     }
 
     func parseModifier() throws -> Modifier {
+        let pos = mark()
         guard skipPrefix("[") else {
             throw error("expected '['")
         }
@@ -904,23 +915,24 @@ public class Parser {
             throw error("expected ']'")
         }
 
+        emit(.modifier, startingAt: pos)
         return modifier
     }
 
     func parseStringValue() throws -> Value {
         var string = try parseStringOrUnquotedString()
-        string += parseSpaces()
 
-        while let s = try? parseStringOrUnquotedString() {
+        while true {
+            let pos = mark()
+            let sp = parseSpaces()
+            guard let s = try? parseStringOrUnquotedString() else {
+                reset(pos)
+                break
+            }
+
+            string += sp
             string += s
-            string += parseSpaces()
         }
-
-        // HACK: not in the grammar. Remove leading and
-        // trailing whitespace from string values so that
-        // we end up with '"shoes" and "socks"' instead
-        // of '"shoes " and "socks "'
-        string = string.trimmingCharacters(in: .whitespaces)
 
         return .literal(string)
     }
