@@ -281,6 +281,8 @@ public enum TokenType: Equatable {
     case relation
     case quotedString
     case unquotedString
+    case boolean
+    case set
 }
 
 public struct Token: Equatable {
@@ -611,10 +613,7 @@ public class Parser {
     }
 
     func parseStepType() throws -> Type {
-        let pos = mark()
-
         if skipHeading() {
-            emit(.type, startingAt: pos)
             return .heading
         }
 
@@ -851,34 +850,26 @@ public class Parser {
     }
 
     func parseRelation() throws -> Relation {
-        let pos = mark()
-
-        var r: Relation? = nil
         if skipBeginswith() {
-            r = .beginsWith
+            return .beginsWith
         } else if skipEndswith() {
-            r = .endsWith
+            return .endsWith
         } else if skipContains() {
-            r = .contains
+            return .contains
         } else if skipMatches() {
-            r = .matches
-        } else if skipPrefix("=") {
-            r = .equal
-        } else if skipPrefix("!=") {
-            r = .notEqual
-        } else if skipPrefix("<=") {
-            r = .lessThanOrEqual
-        } else if skipPrefix(">=") {
-            r = .greaterThanOrEqual
-        } else if skipPrefix("<") {
-            r = .lessThan
-        } else if skipPrefix(">") {
-            r = .greaterThan
-        }
-
-        if let r {
-            emit(.relation, startingAt: pos)
-            return r
+            return .matches
+        } else if skipOperator("=", tokenType: .relation) {
+            return .equal
+        } else if skipOperator("!=", tokenType: .relation) {
+            return .notEqual
+        } else if skipOperator("<=", tokenType: .relation) {
+            return .lessThanOrEqual
+        } else if skipOperator(">=", tokenType: .relation) {
+            return .greaterThanOrEqual
+        } else if skipOperator("<", tokenType: .relation) {
+            return .lessThan
+        } else if skipOperator(">", tokenType: .relation) {
+            return .greaterThan
         }
 
         throw error("expected relation")
@@ -1112,91 +1103,61 @@ public class Parser {
     }
 
     func skipUnion() -> Bool {
-        guard skipPrefix("union") else {
-            return false
-        }
-
-        return !matches { try parseIdentRest() }
+        skipOperator("union", tokenType: .set)
     }
 
     func skipExcept() -> Bool {
-        guard skipPrefix("except") else {
-            return false
-        }
-
-        return !matches { try parseIdentRest() }
+        skipOperator("except", tokenType: .set)
     }
 
     func skipIntersect() -> Bool {
-        guard skipPrefix("intersect") else {
-            return false
-        }
-
-        return !matches { try parseIdentRest() }
+        skipOperator("intersect", tokenType: .set)
     }
 
     func skipAnd() -> Bool {
-        guard skipPrefix("and") else {
-            return false
-        }
-
-        return !matches { try parseIdentRest() }
+        skipOperator("and", tokenType: .boolean)
     }
 
     func skipOr() -> Bool {
-        guard skipPrefix("or") else {
-            return false
-        }
-
-        return !matches { try parseIdentRest() }
+        skipOperator("or", tokenType: .boolean)
     }
 
     func skipNot() -> Bool {
-        guard skipPrefix("not") else {
-            return false
-        }
-
-        return !matches { try parseIdentRest() }
+        skipOperator("not", tokenType: .boolean)
     }
 
     func skipBeginswith() -> Bool {
-        guard skipPrefix("beginswith") else {
-            return false
-        }
-
-        return !matches { try parseIdentRest() }
+        skipOperator("beginswith", tokenType: .relation)
     }
 
     func skipEndswith() -> Bool {
-        guard skipPrefix("endswith") else {
-            return false
-        }
-
-        return !matches { try parseIdentRest() }
+        skipOperator("endswith", tokenType: .relation)
     }
 
     func skipContains() -> Bool {
-        guard skipPrefix("contains") else {
-            return false
-        }
-
-        return !matches { try parseIdentRest() }
+        skipOperator("contains", tokenType: .relation)
     }
 
     func skipMatches() -> Bool {
-        guard skipPrefix("matches") else {
-            return false
-        }
-
-        return !matches { try parseIdentRest() }
+        skipOperator("matches", tokenType: .relation)
     }
 
     func skipHeading() -> Bool {
-        guard skipPrefix("heading") else {
+        skipOperator("heading", tokenType: .type)
+    }
+
+    func skipOperator(_ s: String, tokenType type: TokenType) -> Bool {
+        let pos = mark()
+        guard skipPrefix(s) else {
             return false
         }
 
-        return !matches { try parseIdentRest() }
+        if matches({ try parseIdentRest() }) {
+            return false
+        }
+
+        emit(type, startingAt: pos)
+        return true
     }
 
     func matches<T>(_ f: () throws -> T) -> Bool {
