@@ -17,8 +17,14 @@ public struct Path: Equatable {
     var steps: [Step]
 }
 
+public enum Type: Equatable {
+    case any
+    case heading
+}
+
 public struct Step: Equatable {
     var axis: Axis
+    var type: Type
     var predicate: Predicate
     var slice: Slice?
 }
@@ -155,7 +161,11 @@ public enum Modifier: Equatable {
 // integer <- "-"? [0-9]+
 // LocationExpression <- itemPath
 // itemPath <- "/"? pathStep ("/" pathStep)*
-// pathStep <- axis? OrPredicates slice?
+// pathStep <- axis? stepTest slice?
+// stepTest <- stepType OrPredicates
+//           / stepType
+//           / OrPredicates
+// stepType <- heading
 // axis <- "ancestor-or-self::"
 //       / "ancestor::"
 //       / "child::"
@@ -227,6 +237,7 @@ public enum Modifier: Equatable {
 //            / [\u0300-\u036F]
 //            / [\u203F-\u2040]
 // keyword <- relation
+//          / stepType
 //          / union
 //          / except
 //          / intersect
@@ -243,6 +254,7 @@ public enum Modifier: Equatable {
 // endswith <- "endswith" !identRest
 // contains <- "contains" !identRest
 // matches <- "matches" !identRest
+// heading <- "heading" !identRest
 // spaces <- space*
 // space <- [ \t\n\r]
 //
@@ -514,14 +526,14 @@ public class Parser {
 
     func parsePathStep() throws -> Step {
         let axis = (try? parseAxis()) ?? .child
-        let predicate = try parseOrPredicates()
+        let (type, predicate) = try parseStepTest()
 
         var slice: Slice?
         if hasPrefix("[") {
             slice = try parseSlice()
         }
 
-        return Step(axis: axis, predicate: predicate, slice: slice)
+        return Step(axis: axis, type: type, predicate: predicate, slice: slice)
     }
 
     func parseAxis() throws -> Axis {
@@ -559,6 +571,39 @@ public class Parser {
 
         throw error("expected axis")
     }
+
+    func parseStepTest() throws -> (Type, Predicate) {
+        let pos = mark()
+
+        if let type = try? parseStepType(), let predicate = try? parseOrPredicates() {
+            return (type, predicate)
+        }
+
+        reset(pos)
+
+        if let stepType = try? parseStepType() {
+            return (stepType, .any)
+        }
+
+        reset(pos)
+
+        if let predicate = try? parseOrPredicates() {
+            return (.any, predicate)
+        }
+
+        reset(pos)
+
+        throw error("expected step type or predicate")
+    }
+
+    func parseStepType() throws -> Type {
+        if skipHeading() {
+            return .heading
+        }
+
+        throw error("expected step type")
+    }
+
 
     func parseOrPredicates() throws -> Predicate {
         skipWhitespace()
@@ -1021,6 +1066,13 @@ public class Parser {
         // consume unless it matches, but that's an implementation detail
         reset(pos)
 
+        if (try? parseStepType()) != nil {
+            return true
+        }
+
+        // ditto to the above
+        reset(pos)
+
         return skipUnion() || skipExcept() || skipIntersect() || skipAnd() || skipOr() || skipNot()
     }
 
@@ -1098,6 +1150,14 @@ public class Parser {
 
     func skipMatches() -> Bool {
         guard skipPrefix("matches") else {
+            return false
+        }
+
+        return !matches { try parseIdentRest() }
+    }
+
+    func skipHeading() -> Bool {
+        guard skipPrefix("heading") else {
             return false
         }
 

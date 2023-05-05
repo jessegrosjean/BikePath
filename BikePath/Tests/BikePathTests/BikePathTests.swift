@@ -10,7 +10,7 @@ final class BikePathTests: XCTestCase {
         let actual = try p.parse()
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .any)
+            Step(axis: .child, type: .any, predicate: .any)
         ])))
 
         XCTAssertEqual(expected, actual)
@@ -21,7 +21,7 @@ final class BikePathTests: XCTestCase {
         let actual = try p.parse()
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             )
         ])))
@@ -33,7 +33,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("shoes socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("shoes socks"))
             )
         ])))
@@ -46,7 +46,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("shoes \"    \" socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("shoes      socks"))
             )
         ])))
@@ -59,7 +59,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("\"shoes \\\"and\\\" socks\"")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("shoes \"and\" socks"))
             )
         ])))
@@ -72,7 +72,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("not socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .not(.comparison(
+            Step(axis: .child, type: .any, predicate: .not(.comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")))
             )
         ])))
@@ -85,7 +85,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("not not socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             )
         ])))
@@ -98,7 +98,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("shoes or socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .or(
+            Step(axis: .child, type: .any, predicate: .or(
                 .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("shoes")),
                 .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ))
@@ -112,7 +112,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("shoes or socks or pants")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .or(
+            Step(axis: .child, type: .any, predicate: .or(
                 .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("shoes")),
                 .or(
                     .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("socks")),
@@ -129,7 +129,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("shoes and socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .and(
+            Step(axis: .child, type: .any, predicate: .and(
                 .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("shoes")),
                 .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ))
@@ -143,7 +143,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("shoes and socks and pants")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .and(
+            Step(axis: .child, type: .any, predicate: .and(
                 .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("shoes")),
                 .and(
                     .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("socks")),
@@ -160,7 +160,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("(shoes or socks) and pants")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .and(
+            Step(axis: .child, type: .any, predicate: .and(
                 .or(
                     .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("shoes")),
                     .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
@@ -177,7 +177,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("(shoes or socks) and (not (not pants) or shorts)")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .and(
+            Step(axis: .child, type: .any, predicate: .and(
                 .or(
                     .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("shoes")),
                     .comparison(.getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
@@ -199,7 +199,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("= socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .equal, .caseInsensitive, .literal("socks")
             ))
         ])))
@@ -212,7 +212,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("= [s] socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .equal, .caseSensitive, .literal("socks")
             ))
         ])))
@@ -225,7 +225,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("@tag = [s] socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("tag"), .equal, .caseSensitive, .literal("socks")
             ))
         ])))
@@ -240,7 +240,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("@tag")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("tag"), nil, .caseInsensitive, nil)
             )
         ])))
@@ -253,10 +253,10 @@ final class BikePathTests: XCTestCase {
         let p = Parser("downcase(@text) contains socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .function(Function(name: "downcase", arg: .path(
                     Path(absolute: false, steps: [
-                        Step(axis: .child, predicate: .comparison(
+                        Step(axis: .child, type: .any, predicate: .comparison(
                             .getAttribute("text"), nil, .caseInsensitive, nil
                         )),
                     ])
@@ -273,7 +273,7 @@ final class BikePathTests: XCTestCase {
 
         let expected = PathExpression.function(Function(name: "count", arg: .path(
             Path(absolute: false, steps: [
-                Step(axis: .child, predicate: .comparison(
+                Step(axis: .child, type: .any, predicate: .comparison(
                     .getAttribute("tag"), nil, .caseInsensitive, nil
                 )),
             ])
@@ -287,7 +287,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")
             ))
         ])))
@@ -302,7 +302,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("beginswith socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .beginsWith, .caseInsensitive, .literal("socks")
             ))
         ])))
@@ -315,7 +315,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("endswith socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .endsWith, .caseInsensitive, .literal("socks")
             ))
         ])))
@@ -328,7 +328,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("contains socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")
             ))
         ])))
@@ -341,7 +341,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("matches socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .matches, .caseInsensitive, .literal("socks")
             ))
         ])))
@@ -354,7 +354,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("= socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .equal, .caseInsensitive, .literal("socks")
             ))
         ])))
@@ -367,7 +367,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("!= socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .notEqual, .caseInsensitive, .literal("socks")
             ))
         ])))
@@ -380,7 +380,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("<= socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .lessThanOrEqual, .caseInsensitive, .literal("socks")
             ))
         ])))
@@ -393,7 +393,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser(">= socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .greaterThanOrEqual, .caseInsensitive, .literal("socks")
             ))
         ])))
@@ -406,7 +406,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("< socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .lessThan, .caseInsensitive, .literal("socks")
             ))
         ])))
@@ -419,7 +419,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("> socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .greaterThan, .caseInsensitive, .literal("socks")
             ))
         ])))
@@ -434,7 +434,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("[i] socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")
             ))
         ])))
@@ -447,7 +447,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("[s] socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseSensitive, .literal("socks")
             ))
         ])))
@@ -460,7 +460,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("[n] 123")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .numericCompare, .literal("123")
             ))
         ])))
@@ -473,7 +473,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("[d] 2019-01-01")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .dateCompare, .literal("2019-01-01")
             ))
         ])))
@@ -488,7 +488,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("socks[1]")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")),
                 slice: Slice(start: 1)
             ),
@@ -502,7 +502,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("socks[1:2]")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")),
                 slice: Slice(start: 1, end: 2)
             ),
@@ -516,7 +516,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("socks[:2]")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")),
                 slice: Slice(end: 2)
             ),
@@ -530,7 +530,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("socks[1:]")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")),
                 slice: Slice(start: 1)
             ),
@@ -544,7 +544,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("socks[:]")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks")),
                 slice: Slice()
             ),
@@ -560,7 +560,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("ancestor-or-self::socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .ancestorOrSelf, predicate: .comparison(
+            Step(axis: .ancestorOrSelf, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
         ])))
@@ -573,7 +573,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("ancestor::socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .ancestor, predicate: .comparison(
+            Step(axis: .ancestor, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
         ])))
@@ -586,7 +586,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("child::socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
         ])))
@@ -599,7 +599,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("descendant-or-self::socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .descendantOrSelf, predicate: .comparison(
+            Step(axis: .descendantOrSelf, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
         ])))
@@ -612,7 +612,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("descendant::socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .descendant, predicate: .comparison(
+            Step(axis: .descendant, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
         ])))
@@ -625,7 +625,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("following-sibling::socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .followingSibling, predicate: .comparison(
+            Step(axis: .followingSibling, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
         ])))
@@ -638,7 +638,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("following::socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .following, predicate: .comparison(
+            Step(axis: .following, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
         ])))
@@ -651,7 +651,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("preceding-sibling::socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .precedingSibling, predicate: .comparison(
+            Step(axis: .precedingSibling, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
         ])))
@@ -664,7 +664,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("preceding::socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .preceding, predicate: .comparison(
+            Step(axis: .preceding, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
         ])))
@@ -677,7 +677,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("parent::socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .parent, predicate: .comparison(
+            Step(axis: .parent, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
         ])))
@@ -690,7 +690,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("self::socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .self, predicate: .comparison(
+            Step(axis: .self, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
         ])))
@@ -703,7 +703,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("///socks")
 
         let expected = PathExpression.location(.path(Path(absolute: true, steps: [
-            Step(axis: .descendantOrSelfShortcut, predicate: .comparison(
+            Step(axis: .descendantOrSelfShortcut, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
         ])))
@@ -716,7 +716,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("//socks")
 
         let expected = PathExpression.location(.path(Path(absolute: true, steps: [
-            Step(axis: .descendantShortcut, predicate: .comparison(
+            Step(axis: .descendantShortcut, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
         ])))
@@ -729,7 +729,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser("..socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .parentShortcut, predicate: .comparison(
+            Step(axis: .parentShortcut, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
         ])))
@@ -742,7 +742,7 @@ final class BikePathTests: XCTestCase {
         let p = Parser(".socks")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .selfShortcut, predicate: .comparison(
+            Step(axis: .selfShortcut, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
         ])))
@@ -759,18 +759,18 @@ final class BikePathTests: XCTestCase {
         let expected = PathExpression.location(
             .union(
                 .path(Path(absolute: false, steps: [
-                    Step(axis: .child, predicate: .comparison(
+                    Step(axis: .child, type: .any, predicate: .comparison(
                         .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
                     ),
                 ])),
                 .union(
                     .path(Path(absolute: false, steps: [
-                        Step(axis: .child, predicate: .comparison(
+                        Step(axis: .child, type: .any, predicate: .comparison(
                             .getAttribute("text"), .contains, .caseInsensitive, .literal("shoes"))
                         ),
                     ])),
                     .path(Path(absolute: false, steps: [
-                        Step(axis: .child, predicate: .comparison(
+                        Step(axis: .child, type: .any, predicate: .comparison(
                             .getAttribute("text"), .contains, .caseInsensitive, .literal("pants"))
                         ),
                     ]))
@@ -788,18 +788,18 @@ final class BikePathTests: XCTestCase {
         let expected = PathExpression.location(
             .except(
                 .path(Path(absolute: false, steps: [
-                    Step(axis: .child, predicate: .comparison(
+                    Step(axis: .child, type: .any, predicate: .comparison(
                         .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
                     ),
                 ])),
                 .except(
                     .path(Path(absolute: false, steps: [
-                        Step(axis: .child, predicate: .comparison(
+                        Step(axis: .child, type: .any, predicate: .comparison(
                             .getAttribute("text"), .contains, .caseInsensitive, .literal("shoes"))
                         ),
                     ])),
                     .path(Path(absolute: false, steps: [
-                        Step(axis: .child, predicate: .comparison(
+                        Step(axis: .child, type: .any, predicate: .comparison(
                             .getAttribute("text"), .contains, .caseInsensitive, .literal("pants"))
                         ),
                     ]))
@@ -817,18 +817,18 @@ final class BikePathTests: XCTestCase {
         let expected = PathExpression.location(
             .intersect(
                 .path(Path(absolute: false, steps: [
-                    Step(axis: .child, predicate: .comparison(
+                    Step(axis: .child, type: .any, predicate: .comparison(
                         .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
                     ),
                 ])),
                 .intersect(
                     .path(Path(absolute: false, steps: [
-                        Step(axis: .child, predicate: .comparison(
+                        Step(axis: .child, type: .any, predicate: .comparison(
                             .getAttribute("text"), .contains, .caseInsensitive, .literal("shoes"))
                         ),
                     ])),
                     .path(Path(absolute: false, steps: [
-                        Step(axis: .child, predicate: .comparison(
+                        Step(axis: .child, type: .any, predicate: .comparison(
                             .getAttribute("text"), .contains, .caseInsensitive, .literal("pants"))
                         ),
                     ]))
@@ -846,13 +846,13 @@ final class BikePathTests: XCTestCase {
         let p = Parser("socks/shoes/pants")
 
         let expected = PathExpression.location(.path(Path(absolute: false, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("shoes"))
             ),
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("pants"))
             ),
         ])))
@@ -865,13 +865,13 @@ final class BikePathTests: XCTestCase {
         let p = Parser("/socks/shoes/pants")
 
         let expected = PathExpression.location(.path(Path(absolute: true, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("socks"))
             ),
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("shoes"))
             ),
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .contains, .caseInsensitive, .literal("pants"))
             ),
         ])))
@@ -884,13 +884,13 @@ final class BikePathTests: XCTestCase {
         let p = Parser("/@tag contains [s] Done/@dueDate < \"2019-01-01\"/@text = shoes")
 
         let expected = PathExpression.location(.path(Path(absolute: true, steps: [
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("tag"), .contains, .caseSensitive, .literal("Done")
             )),
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("dueDate"), .lessThan, .caseInsensitive, .literal("2019-01-01")
             )),
-            Step(axis: .child, predicate: .comparison(
+            Step(axis: .child, type: .any, predicate: .comparison(
                 .getAttribute("text"), .equal, .caseInsensitive, .literal("shoes")
             )),
         ])))
@@ -903,31 +903,47 @@ final class BikePathTests: XCTestCase {
 
     // TODO: add the special shorthand for type (e.g. project)
 
-    // func testMediumQuery() throws {
-    //     let p = Parser("//project//count(.*) = 0[0]")
+    func testMediumQuery() throws {
+        let p = Parser("//heading//count(.*) = 0[0]")
 
-    //     let expected = PathExpression.location(
-    //         .path(Path(absolute: true, steps: [
-    //             Step(axis: .descendantShortcut, predicate: .comparison(
-    //                 .getAttribute("type"), .equal, .caseInsensitive, .literal("project")
-    //             )),
-    //             Step(axis: .descendantShortcut, predicate: .comparison(
-    //                 .function(Function(name: "count", arg: .path(Path(absolute: false, steps: [
-    //                     Step(axis: .selfShortcut, predicate: .any)
-    //                 ])))), .equal, .caseInsensitive, .literal("0")
-    //             ), slice: Slice(start: 0, end: nil)),
-    //         ]))
-    //     )
+        let expected = PathExpression.location(
+            .path(Path(absolute: true, steps: [
+                Step(axis: .descendantShortcut, type: .heading, predicate: .any),
+                Step(axis: .descendantShortcut, type: .any, predicate: .comparison(
+                    .function(Function(name: "count", arg: .path(Path(absolute: false, steps: [
+                        Step(axis: .selfShortcut, type: .any, predicate: .any)
+                    ])))), .equal, .caseInsensitive, .literal("0")
+                ), slice: Slice(start: 0, end: nil)),
+            ]))
+        )
 
-    //     let actual = try p.parse()
-    //     XCTAssertEqual(expected, actual)
-    // }
-
-    // func testLargeQuery() throws {
-    //     let p = Parser("project *//@type task and not @done[0]")
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
 
 
-    // }
+    func testLargeQuery() throws {
+        let p = Parser("heading foo//@type = task and not @done[0]")
+
+        let expected = PathExpression.location(
+            .path(Path(absolute: false, steps: [
+                Step(axis: .child, type: .heading, predicate: .comparison(
+                    .getAttribute("text"), .contains, .caseInsensitive, .literal("foo")
+                )),
+                Step(axis: .descendantShortcut, type: .any, predicate: .and(
+                    .comparison(
+                        .getAttribute("type"), .equal, .caseInsensitive, .literal("task")
+                    ),
+                    .not(.comparison(
+                        .getAttribute("done"), nil, .caseInsensitive, nil)
+                    )
+                ), slice: Slice(start: 0, end: nil))
+            ]))
+        )
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
 
     func testHugeQuery() throws {
         let p = Parser("/child::@text contains [s] Foo Bar/following::(@dueDate <= [d] \"2019-01-01\" or @tag = longPast) and @assignee = Bob union /foo/..*/following-sibling::@text contains [s] Baz")
@@ -935,10 +951,10 @@ final class BikePathTests: XCTestCase {
         let expected = PathExpression.location(
             .union(
                 .path(Path(absolute: true, steps: [
-                    Step(axis: .child, predicate: .comparison(
+                    Step(axis: .child, type: .any, predicate: .comparison(
                         .getAttribute("text"), .contains, .caseSensitive, .literal("Foo Bar"))
                     ),
-                    Step(axis: .following, predicate: .and(
+                    Step(axis: .following, type: .any, predicate: .and(
                         .or(
                             .comparison(
                                 .getAttribute("dueDate"), .lessThanOrEqual, .dateCompare, .literal("2019-01-01")
@@ -953,11 +969,11 @@ final class BikePathTests: XCTestCase {
                     ),
                 ])),
                 .path(Path(absolute: true, steps: [
-                    Step(axis: .child, predicate: .comparison(
+                    Step(axis: .child, type: .any, predicate: .comparison(
                         .getAttribute("text"), .contains, .caseInsensitive, .literal("foo"))
                     ),
-                    Step(axis: .parentShortcut, predicate: .any),
-                    Step(axis: .followingSibling, predicate: .comparison(
+                    Step(axis: .parentShortcut, type: .any, predicate: .any),
+                    Step(axis: .followingSibling, type: .any, predicate: .comparison(
                         .getAttribute("text"), .contains, .caseSensitive, .literal("Baz"))
                     ),
                 ]))
