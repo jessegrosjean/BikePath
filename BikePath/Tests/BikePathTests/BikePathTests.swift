@@ -948,8 +948,6 @@ final class BikePathTests: XCTestCase {
 
     // Mark: - The kitchen sink
 
-    // TODO: add the special shorthand for type (e.g. project)
-
     func testMediumQuery() throws {
         let p = Parser("//heading//count(.*) = 0[0]")
 
@@ -1034,7 +1032,7 @@ final class BikePathTests: XCTestCase {
     // Mark: - Tokens
 
     func testParseAxisToken() throws {
-        let s = "descendant::@text = foo"
+        let s = "descendant::foo"
         let p = Parser(s)
 
         _ = try p.parse()
@@ -1049,7 +1047,7 @@ final class BikePathTests: XCTestCase {
     }
 
     func testParseAbsoluteAxisToken() throws {
-        let s = "///@foo = bar and @baz = qux"
+        let s = "///foo and bar"
         let p = Parser(s)
 
         _ = try p.parse()
@@ -1073,7 +1071,7 @@ final class BikePathTests: XCTestCase {
     }
 
     func testParseTokensForMultipleAxis() throws {
-        let s = "descendant::@text = foo/child::@text = bar"
+        let s = "descendant::foo/child::bar"
         let p = Parser(s)
 
         _ = try p.parse()
@@ -1112,6 +1110,48 @@ final class BikePathTests: XCTestCase {
         let expected = [
             Token(type: .axis, value: v1, range: r1),
             Token(type: .type, value: v2, range: r2),
+        ]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseAttributeToken() throws {
+        let s = "@foo = @bar"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r1 = s.range(of: "@foo")!
+        let v1 = s[r1]
+
+        let r2 = s.range(of: "@bar")!
+        let v2 = s[r2]
+
+        let expected = [
+            Token(type: .attribute, value: v1, range: r1),
+            Token(type: .attribute, value: v2, range: r2),
+        ]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseFunctionToken() throws {
+        let s = "foo/count(bar) = 1"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r1 = s.range(of: "/")!
+        let v1 = s[r1]
+
+        let r2 = s.range(of: "count")!
+        let v2 = s[r2]
+
+        let expected = [
+            Token(type: .axis, value: v1, range: r1),
+            Token(type: .function, value: v2, range: r2),
         ]
         let actual = p.tokens
 

@@ -276,6 +276,8 @@ public enum Modifier: Equatable {
 public enum TokenType: Equatable {
     case axis
     case type
+    case attribute
+    case function
 }
 
 public struct Token: Equatable {
@@ -816,17 +818,21 @@ public class Parser {
     }
 
     func parseAttributeValue() throws -> Value {
+        let pos = mark()
         guard skipPrefix("@") else {
             throw error("expected '@'")
         }
 
         let name = try parseIdentifier()
-
+        
+        emit(.attribute, startingAt: pos)
         return .getAttribute(name)
     }
 
     func parseFunction() throws -> Function {
+        let pos = mark()
         let name = try parseIdentifier()
+        emit(.function, startingAt: pos)
 
         guard skipPrefix("(") else {
             throw error("expected '('")
