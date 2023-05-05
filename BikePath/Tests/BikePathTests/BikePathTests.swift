@@ -1882,7 +1882,8 @@ final class BikePathTests: XCTestCase {
     // Mark: - The kitchen sink
 
     func testMediumQuery() throws {
-        let p = Parser("//heading//count(.*) = 0[0]")
+        let s = "//heading//count(.*) = 0[0]"
+        let p = Parser(s)
 
         let expected = PathExpression.location(
             .path(Path(absolute: true, steps: [
@@ -1897,11 +1898,66 @@ final class BikePathTests: XCTestCase {
 
         let actual = try p.parse()
         XCTAssertEqual(expected, actual)
+
+        let r1 = s.startIndex..<s.index(s.startIndex, offsetBy: 1)
+        let v1 = s[r1]
+        XCTAssertEqual(v1, "/")
+
+        let r2 = s.index(s.startIndex, offsetBy: 1)..<s.index(s.startIndex, offsetBy: 2)
+        let v2 = s[r2]
+        XCTAssertEqual(v2, "/")
+
+        let r3 = s.range(of: "heading")!
+        let v3 = s[r3]
+
+        let r4 = s.index(s.startIndex, offsetBy: 9)..<s.index(s.startIndex, offsetBy: 10)
+        let v4 = s[r4]
+        XCTAssertEqual(v4, "/")
+
+        let r5 = s.index(s.startIndex, offsetBy: 10)..<s.index(s.startIndex, offsetBy: 11)
+        let v5 = s[r5]
+        XCTAssertEqual(v5, "/")
+
+        let r6 = s.range(of: "count")!
+        let v6 = s[r6]
+
+        let r7 = s.range(of: ".")!
+        let v7 = s[r7]
+
+        let r8 = s.range(of: "*")!
+        let v8 = s[r8]
+
+        let r9 = s.range(of: "=")!
+        let v9 = s[r9]
+
+        let r10 = s.range(of: "0")!
+        let v10 = s[r10]
+
+        let r11 = s.range(of: "count(.*) = 0")!
+        let v11 = s[r11]
+
+        let expectedTokens = [
+            Token(type: .axis, range: r1, value: v1),
+            Token(type: .axis, range: r2, value: v2),
+            Token(type: .type, range: r3, value: v3),
+            Token(type: .axis, range: r4, value: v4),
+            Token(type: .axis, range: r5, value: v5),
+            Token(type: .functionName, range: r6, value: v6),
+            Token(type: .axis, range: r7, value: v7),
+            Token(type: .comparison, range: r8, value: v8),
+            Token(type: .relation, range: r9, value: v9),
+            Token(type: .unquotedString, range: r10, value: v10),
+            Token(type: .comparison, range: r11, value: v11),
+        ]
+        let actualTokens = p.tokens
+
+        XCTAssertEqual(expectedTokens, actualTokens)
     }
 
 
     func testLargeQuery() throws {
-        let p = Parser("heading foo//@type = task and not @done[0]")
+        let s = "heading foo//@type = task and not @done[0]"
+        let p = Parser(s)
 
         let expected = PathExpression.location(
             .path(Path(absolute: false, steps: [
@@ -1921,10 +1977,82 @@ final class BikePathTests: XCTestCase {
 
         let actual = try p.parse()
         XCTAssertEqual(expected, actual)
+
+        let t1 = TokenType.type
+        let r1 = s.range(of: "heading")!
+        let v1 = s[r1]
+
+        let t2 = TokenType.unquotedString
+        let r2 = s.range(of: "foo")!
+        let v2 = s[r2]
+
+        let t3 = TokenType.comparison
+        let r3 = s.range(of: "foo")!
+        let v3 = s[r3]
+
+        let t4 = TokenType.axis
+        let r4 = s.index(s.startIndex, offsetBy: 11)..<s.index(s.startIndex, offsetBy: 12)
+        let v4 = s[r4]
+
+        let t5 = TokenType.axis
+        let r5 = s.index(s.startIndex, offsetBy: 12)..<s.index(s.startIndex, offsetBy: 13)
+        let v5 = s[r5]
+
+        let t6 = TokenType.attribute
+        let r6 = s.range(of: "@type")!
+        let v6 = s[r6]
+
+        let t7 = TokenType.relation
+        let r7 = s.range(of: "=")!
+        let v7 = s[r7]
+
+        let t8 = TokenType.unquotedString
+        let r8 = s.range(of: "task")!
+        let v8 = s[r8]
+
+        let t9 = TokenType.comparison
+        let r9 = s.range(of: "@type = task")!
+        let v9 = s[r9]
+
+        let t10 = TokenType.boolean
+        let r10 = s.range(of: "and")!
+        let v10 = s[r10]
+
+        let t11 = TokenType.boolean
+        let r11 = s.range(of: "not")!
+        let v11 = s[r11]
+
+        let t12 = TokenType.attribute
+        let r12 = s.range(of: "@done")!
+        let v12 = s[r12]
+
+        let t13 = TokenType.comparison
+        let r13 = s.range(of: "@done")!
+        let v13 = s[r13]
+
+        let expectedTokens = [
+            Token(type: t1, range: r1, value: v1),
+            Token(type: t2, range: r2, value: v2),
+            Token(type: t3, range: r3, value: v3),
+            Token(type: t4, range: r4, value: v4),
+            Token(type: t5, range: r5, value: v5),
+            Token(type: t6, range: r6, value: v6),
+            Token(type: t7, range: r7, value: v7),
+            Token(type: t8, range: r8, value: v8),
+            Token(type: t9, range: r9, value: v9),
+            Token(type: t10, range: r10, value: v10),
+            Token(type: t11, range: r11, value: v11),
+            Token(type: t12, range: r12, value: v12),
+            Token(type: t13, range: r13, value: v13),
+        ]
+        let actualTokens = p.tokens
+
+        XCTAssertEqual(expectedTokens, actualTokens)
     }
 
     func testHugeQuery() throws {
-        let p = Parser("/child::@text contains [s] Foo Bar/following::heading (@dueDate <= [d] \"2019-01-01\" or @tag = longPast) and @assignee = Bob union /foo/..*/following-sibling::@text contains [s] Baz")
+        let s = "/child::@text contains [s] Foo Bar/following::heading (@dueDate <= [d] \"2019-01-01\" or @tag = longPast) and @assignee = Bob union /foo/..*/following-sibling::@description contains [s] Baz"
+        let p = Parser(s)
 
         let expected = PathExpression.location(
             .union(
@@ -1952,7 +2080,7 @@ final class BikePathTests: XCTestCase {
                     ),
                     Step(axis: .parentShortcut, type: .any, predicate: .any),
                     Step(axis: .followingSibling, type: .any, predicate: .comparison(
-                        .getAttribute("text"), .contains, .caseSensitive, .literal("Baz"))
+                        .getAttribute("description"), .contains, .caseSensitive, .literal("Baz"))
                     ),
                 ]))
             )
@@ -1960,5 +2088,216 @@ final class BikePathTests: XCTestCase {
 
         let actual = try p.parse()
         XCTAssertEqual(expected, actual)
+
+        let t1 = TokenType.axis
+        let r1 = s.index(s.startIndex, offsetBy: 0)..<s.index(s.startIndex, offsetBy: 1)
+        let v1 = s[r1]
+        XCTAssertEqual("/", v1)
+
+        let t2 = TokenType.axis
+        let r2 = s.range(of: "child")!
+        let v2 = s[r2]
+
+        let t3 = TokenType.attribute
+        let r3 = s.range(of: "@text")!
+        let v3 = s[r3]
+
+        let t4 = TokenType.relation
+        let r4 = s.range(of: "contains")!
+        let v4 = s[r4]
+
+        let t5 = TokenType.modifier
+        let r5 = s.range(of: "[s]")!
+        let v5 = s[r5]
+
+        let t6 = TokenType.unquotedString
+        let r6 = s.range(of: "Foo")!
+        let v6 = s[r6]
+
+        let t7 = TokenType.unquotedString
+        let r7 = s.range(of: "Bar")!
+        let v7 = s[r7]
+
+        let t8 = TokenType.comparison
+        let r8 = s.range(of: "@text contains [s] Foo Bar")!
+        let v8 = s[r8]
+
+        let t9 = TokenType.axis
+        let r9 = s.index(s.startIndex, offsetBy: 34)..<s.index(s.startIndex, offsetBy: 35)
+        let v9 = s[r9]
+        XCTAssertEqual("/", v9)
+
+        let t10 = TokenType.axis
+        let r10 = s.range(of: "following::")!
+        let v10 = s[r10]
+
+        let t11 = TokenType.type
+        let r11 = s.range(of: "heading")!
+        let v11 = s[r11]
+
+        let t12 = TokenType.attribute
+        let r12 = s.range(of: "@dueDate")!
+        let v12 = s[r12]
+
+        let t13 = TokenType.comparison
+        let r13 = s.range(of: "<=")!
+        let v13 = s[r13]
+
+        let t14 = TokenType.modifier
+        let r14 = s.range(of: "[d]")!
+        let v14 = s[r14]
+
+        let t15 = TokenType.quotedString
+        let r15 = s.range(of: "\"2019-01-01\"")!
+        let v15 = s[r15]
+
+        let t16 = TokenType.comparison
+        let r16 = s.range(of: "@dueDate <= [d] \"2019-01-01\"")!
+        let v16 = s[r16]
+
+        let t17 = TokenType.boolean
+        let r17 = s.range(of: "or")!
+        let v17 = s[r17]
+
+        let t18 = TokenType.attribute
+        let r18 = s.range(of: "@tag")!
+        let v18 = s[r18]
+
+        let t19 = TokenType.relation
+        let r19 = s.range(of: "=")!
+        let v19 = s[r19]
+
+        let t20 = TokenType.unquotedString
+        let r20 = s.range(of: "longPast")!
+        let v20 = s[r20]
+
+        let t21 = TokenType.comparison
+        let r21 = s.range(of: "@tag = longPast")!
+        let v21 = s[r21]
+
+        let t22 = TokenType.boolean
+        let r22 = s.range(of: "and")!
+        let v22 = s[r22]
+
+        let t23 = TokenType.attribute
+        let r23 = s.range(of: "@assignee")!
+        let v23 = s[r23]
+
+        let t24 = TokenType.relation
+        let r24 = s.range(of: "=")!
+        let v24 = s[r24]
+
+        let t25 = TokenType.unquotedString
+        let r25 = s.range(of: "Bob")!
+        let v25 = s[r25]
+
+        let t26 = TokenType.comparison
+        let r26 = s.range(of: "@assignee = Bob")!
+        let v26 = s[r26]
+
+        let t27 = TokenType.set
+        let r27 = s.range(of: "union")!
+        let v27 = s[r27]
+
+        let t28 = TokenType.axis
+        let r28 = s.index(s.startIndex, offsetBy: 130)..<s.index(s.startIndex, offsetBy: 131)
+        let v28 = s[r28]
+        XCTAssertEqual("/", v28)
+
+        let t29 = TokenType.unquotedString
+        let r29 = s.range(of: "foo")!
+        let v29 = s[r29]
+
+        let t30 = TokenType.comparison
+        let r30 = s.range(of: "foo")!
+        let v30 = s[r30]
+
+        let t31 = TokenType.axis
+        let r31 = s.index(s.startIndex, offsetBy: 134)..<s.index(s.startIndex, offsetBy: 135)
+        let v31 = s[r31]
+        XCTAssertEqual("/", v31)
+
+        let t32 = TokenType.axis
+        let r32 = s.range(of: "..")!
+        let v32 = s[r31]
+
+        let t33 = TokenType.comparison
+        let r33 = s.range(of: "*")!
+        let v33 = s[r33]
+
+        let t34 = TokenType.axis
+        let r34 = s.index(s.startIndex, offsetBy: 138)..<s.index(s.startIndex, offsetBy: 139)
+        let v34 = s[r34]
+        XCTAssertEqual("/", v34)
+
+        let t35 = TokenType.axis
+        let r35 = s.range(of: "following-sibling::")!
+        let v35 = s[r35]
+
+        let t36 = TokenType.attribute
+        let r36 = s.range(of: "@description")!
+        let v36 = s[r36]
+
+        let t37 = TokenType.relation
+        let r37 = s.range(of: "contains")!
+        let v37 = s[r37]
+
+        let t38 = TokenType.modifier
+        let r38 = s.range(of: "[s]")!
+        let v38 = s[r38]
+
+        let t39 = TokenType.unquotedString
+        let r39 = s.range(of: "Baz")!
+        let v39 = s[r39]
+
+        let t40 = TokenType.comparison
+        let r40 = s.range(of: "@description contains [s] Baz")!
+        let v40 = s[r40]
+
+        let expectedTokens = [
+            Token(type: t1, range: r1, value: v1),
+            Token(type: t2, range: r2, value: v2),
+            Token(type: t3, range: r3, value: v3),
+            Token(type: t4, range: r4, value: v4),
+            Token(type: t5, range: r5, value: v5),
+            Token(type: t6, range: r6, value: v6),
+            Token(type: t7, range: r7, value: v7),
+            Token(type: t8, range: r8, value: v8),
+            Token(type: t9, range: r9, value: v9),
+            Token(type: t10, range: r10, value: v10),
+            Token(type: t11, range: r11, value: v11),
+            Token(type: t12, range: r12, value: v12),
+            Token(type: t13, range: r13, value: v13),
+            Token(type: t14, range: r14, value: v14),
+            Token(type: t15, range: r15, value: v15),
+            Token(type: t16, range: r16, value: v16),
+            Token(type: t17, range: r17, value: v17),
+            Token(type: t18, range: r18, value: v18),
+            Token(type: t19, range: r19, value: v19),
+            Token(type: t20, range: r20, value: v20),
+            Token(type: t21, range: r21, value: v21),
+            Token(type: t22, range: r22, value: v22),
+            Token(type: t23, range: r23, value: v23),
+            Token(type: t24, range: r24, value: v24),
+            Token(type: t25, range: r25, value: v25),
+            Token(type: t26, range: r26, value: v26),
+            Token(type: t27, range: r27, value: v27),
+            Token(type: t28, range: r28, value: v28),
+            Token(type: t29, range: r29, value: v29),
+            Token(type: t30, range: r30, value: v30),
+            Token(type: t31, range: r31, value: v31),
+            Token(type: t32, range: r32, value: v32),
+            Token(type: t33, range: r33, value: v33),
+            Token(type: t34, range: r34, value: v34),
+            Token(type: t35, range: r35, value: v35),
+            Token(type: t36, range: r36, value: v36),
+            Token(type: t37, range: r37, value: v37),
+            Token(type: t38, range: r38, value: v38),
+            Token(type: t39, range: r39, value: v39),
+            Token(type: t40, range: r40, value: v40),
+        ]
+        let actualTokens = p.tokens
+
+        XCTAssertEqual(expectedTokens.count, actualTokens.count)
     }
 }
