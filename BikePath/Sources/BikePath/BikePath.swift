@@ -273,21 +273,14 @@ public enum Modifier: Equatable {
 // quoted-string
 // unquoted-string
 
-public enum TokenType {
-    case set
+public enum TokenType: Equatable {
     case axis
-    case boolean
-    case attributeName
-    case functionName
-    case relation
-    case modifier
-    case quotedString
-    case unquotedString
+    case type
 }
 
-public struct Token {
+public struct Token: Equatable {
     var type: TokenType
-    var value: String
+    var value: Substring
     var range: Range<String.Index>
 }
 
@@ -512,16 +505,21 @@ public class Parser {
     }
 
     func parseItemPath() throws -> Path {
+        var pos = mark()
         var absolute = false
         if skipPrefix("/") {
+            emit(.axis, startingAt: pos)
             absolute = true
         }
 
         var steps: [Step] = []
         try steps.append(parsePathStep())
 
+        pos = mark()
         while skipPrefix("/") {
+            emit(.axis, startingAt: pos)
             try steps.append(parsePathStep())
+            pos = mark()
         }
 
         return Path(absolute: absolute, steps: steps)
@@ -540,36 +538,44 @@ public class Parser {
     }
 
     func parseAxis() throws -> Axis {
+        let pos = mark()
+
+        var axis: Axis? = nil
         if skipPrefix("ancestor-or-self::") {
-            return .ancestorOrSelf
+            axis = .ancestorOrSelf
         } else if skipPrefix("ancestor::") {
-            return .ancestor
+            axis = .ancestor
         } else if skipPrefix("child::") {
-            return .child
+            axis = .child
         } else if skipPrefix("descendant-or-self::") {
-            return .descendantOrSelf
+            axis = .descendantOrSelf
         } else if skipPrefix("descendant::") {
-            return .descendant
+            axis = .descendant
         } else if skipPrefix("following-sibling::") {
-            return .followingSibling
+            axis = .followingSibling
         } else if skipPrefix("following::") {
-            return .following
+            axis = .following
         } else if skipPrefix("preceding-sibling::") {
-            return .precedingSibling
+            axis = .precedingSibling
         } else if skipPrefix("preceding::") {
-            return .preceding
+            axis = .preceding
         } else if skipPrefix("parent::") {
-            return .parent
+            axis = .parent
         } else if skipPrefix("self::") {
-            return .self
+            axis = .self
         } else if skipPrefix("//") {
-            return .descendantOrSelfShortcut
+            axis = .descendantOrSelfShortcut
         } else if skipPrefix("/") {
-            return .descendantShortcut
+            axis = .descendantShortcut
         } else if skipPrefix("..") {
-            return .parentShortcut
+            axis = .parentShortcut
         } else if skipPrefix(".") {
-            return .selfShortcut
+            axis = .selfShortcut
+        }
+
+        if let axis {
+            emit(.axis, startingAt: pos)
+            return axis
         }
 
         throw error("expected axis")
@@ -600,7 +606,10 @@ public class Parser {
     }
 
     func parseStepType() throws -> Type {
+        let pos = mark()
+
         if skipHeading() {
+            emit(.type, startingAt: pos)
             return .heading
         }
 
@@ -1228,6 +1237,13 @@ public class Parser {
     func reset(_ old: Mark) {
         chars = old.chars
         tokens = old.tokens
+    }
+
+    func emit(_ type: TokenType, startingAt m: Mark) {
+        let range = m.chars.pos..<chars.pos
+        let value = chars.string[range]
+        let token = Token(type: type, value: value, range: range)
+        tokens.append(token)
     }
 
     func error(_ message: String) -> ParseError {

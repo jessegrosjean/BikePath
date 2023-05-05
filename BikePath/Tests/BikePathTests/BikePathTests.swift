@@ -1030,4 +1030,91 @@ final class BikePathTests: XCTestCase {
         let actual = try p.parse()
         XCTAssertEqual(expected, actual)
     }
+
+    // Mark: - Tokens
+
+    func testParseAxisToken() throws {
+        let s = "descendant::@text = foo"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let range = s.range(of: "descendant::")!
+        let value = s[range]
+
+        let expected = [Token(type: .axis, value: value, range: range)]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseAbsoluteAxisToken() throws {
+        let s = "///@foo = bar and @baz = qux"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r1 = s.startIndex..<s.index(s.startIndex, offsetBy: 1)
+        let v1 = s[r1]
+
+        let r2 = s.index(s.startIndex, offsetBy: 1)..<s.index(s.startIndex, offsetBy: 3)
+        let v2 = s[r2]
+
+        let expected = [
+            Token(type: .axis, value: v1, range: r1),
+            Token(type: .axis, value: v2, range: r2),
+        ]
+        let actual = p.tokens
+
+        XCTAssertEqual(v1, "/")
+        XCTAssertEqual(v2, "//")
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseTokensForMultipleAxis() throws {
+        let s = "descendant::@text = foo/child::@text = bar"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r1 = s.range(of: "descendant::")!
+        let v1 = s[r1]
+
+        let r2 = s.range(of: "/")!
+        let v2 = s[r2]
+
+        let r3 = s.range(of: "child::")!
+        let v3 = s[r3]
+
+        let expected = [
+            Token(type: .axis, value: v1, range: r1),
+            Token(type: .axis, value: v2, range: r2),
+            Token(type: .axis, value: v3, range: r3),
+        ]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseTypeToken() throws {
+        let s = "foo/heading = bar"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r1 = s.range(of: "/")!
+        let v1 = s[r1]
+
+        let r2 = s.range(of: "heading")!
+        let v2 = s[r2]
+
+        let expected = [
+            Token(type: .axis, value: v1, range: r1),
+            Token(type: .type, value: v2, range: r2),
+        ]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
 }
