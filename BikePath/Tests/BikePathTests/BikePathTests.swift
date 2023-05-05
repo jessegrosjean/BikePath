@@ -1054,7 +1054,7 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    func testParseFunctionToken() throws {
+    func testParseFunctionNameToken() throws {
         let s = "foo/count(bar) = 1"
         let p = Parser(s)
 
@@ -1068,7 +1068,7 @@ final class BikePathTests: XCTestCase {
 
         let expected = [
             Token(type: .axis, value: v1, range: r1),
-            Token(type: .function, value: v2, range: r2),
+            Token(type: .functionName, value: v2, range: r2),
         ]
         let actual = p.tokens
 

@@ -277,7 +277,7 @@ public enum TokenType: Equatable {
     case axis
     case type
     case attribute
-    case function
+    case functionName
 }
 
 public struct Token: Equatable {
@@ -832,7 +832,7 @@ public class Parser {
     func parseFunction() throws -> Function {
         let pos = mark()
         let name = try parseIdentifier()
-        emit(.function, startingAt: pos)
+        emit(.functionName, startingAt: pos)
 
         guard skipPrefix("(") else {
             throw error("expected '('")
