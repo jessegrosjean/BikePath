@@ -1012,6 +1012,42 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
+    func testParseRelationToken() throws {
+        let s = "= shoes"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r = s.range(of: "=")!
+        let v = s[r]
+
+        let expected = [Token(type: .relation, range: r, value: v)]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseWordRelationToken() throws {
+        let s = "@foo beginswith bar"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r1 = s.range(of: "@foo")!
+        let v1 = s[r1]
+
+        let r2 = s.range(of: "beginswith")!
+        let v2 = s[r2]
+
+        let expected = [
+            Token(type: .attribute, range: r1, value: v1),
+            Token(type: .relation, range: r2, value: v2),
+        ]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
     func testParseTypeToken() throws {
         let s = "foo/heading = bar"
         let p = Parser(s)
@@ -1024,9 +1060,13 @@ final class BikePathTests: XCTestCase {
         let r2 = s.range(of: "heading")!
         let v2 = s[r2]
 
+        let r3 = s.range(of: "=")!
+        let v3 = s[r3]
+
         let expected = [
             Token(type: .axis, range: r1, value: v1),
             Token(type: .type, range: r2, value: v2),
+            Token(type: .relation, range: r3, value: v3),
         ]
         let actual = p.tokens
 
@@ -1042,12 +1082,16 @@ final class BikePathTests: XCTestCase {
         let r1 = s.range(of: "@foo")!
         let v1 = s[r1]
 
-        let r2 = s.range(of: "@bar")!
+        let r2 = s.range(of: "=")!
         let v2 = s[r2]
+
+        let r3 = s.range(of: "@bar")!
+        let v3 = s[r3]
 
         let expected = [
             Token(type: .attribute, range: r1, value: v1),
-            Token(type: .attribute, range: r2, value: v2),
+            Token(type: .relation, range: r2, value: v2),
+            Token(type: .attribute, range: r3, value: v3),
         ]
         let actual = p.tokens
 
@@ -1066,10 +1110,29 @@ final class BikePathTests: XCTestCase {
         let r2 = s.range(of: "count")!
         let v2 = s[r2]
 
+        let r3 = s.range(of: "=")!
+        let v3 = s[r3]
+
         let expected = [
             Token(type: .axis, range: r1, value: v1),
             Token(type: .functionName, range: r2, value: v2),
+            Token(type: .relation, range: r3, value: v3),
         ]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseTopLevelFunctionNameToken() throws {
+        let s = "count(foo)"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r = s.range(of: "count")!
+        let v = s[r]
+
+        let expected = [Token(type: .functionName, range: r, value: v)]
         let actual = p.tokens
 
         XCTAssertEqual(expected, actual)

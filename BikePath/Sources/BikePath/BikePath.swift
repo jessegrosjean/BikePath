@@ -278,6 +278,7 @@ public enum TokenType: Equatable {
     case type
     case attribute
     case functionName
+    case relation
 }
 
 public struct Token: Equatable {
@@ -848,26 +849,34 @@ public class Parser {
     }
 
     func parseRelation() throws -> Relation {
+        let pos = mark()
+
+        var r: Relation? = nil
         if skipBeginswith() {
-            return .beginsWith
+            r = .beginsWith
         } else if skipEndswith() {
-            return .endsWith
+            r = .endsWith
         } else if skipContains() {
-            return .contains
+            r = .contains
         } else if skipMatches() {
-            return .matches
+            r = .matches
         } else if skipPrefix("=") {
-            return .equal
+            r = .equal
         } else if skipPrefix("!=") {
-            return .notEqual
+            r = .notEqual
         } else if skipPrefix("<=") {
-            return .lessThanOrEqual
+            r = .lessThanOrEqual
         } else if skipPrefix(">=") {
-            return .greaterThanOrEqual
+            r = .greaterThanOrEqual
         } else if skipPrefix("<") {
-            return .lessThan
+            r = .lessThan
         } else if skipPrefix(">") {
-            return .greaterThan
+            r = .greaterThan
+        }
+
+        if let r {
+            emit(.relation, startingAt: pos)
+            return r
         }
 
         throw error("expected relation")
