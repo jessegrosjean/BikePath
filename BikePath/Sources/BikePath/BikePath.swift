@@ -341,11 +341,14 @@ struct ParseError: Error, CustomStringConvertible {
     var description: String
 }
 
-// TODO: maybe change to a struct and make mark return a parser so we
-// can easily backtrack tokens on error.
-public class Parser {
-    var tokens: [Token]
+struct Mark {
     var chars: CharacterStream
+    var tokens: [Token]
+}
+
+public class Parser {
+    var chars: CharacterStream
+    var tokens: [Token]
 
     public init(_ input: String) {
         self.chars = CharacterStream(input)
@@ -1218,12 +1221,13 @@ public class Parser {
         return chars.peek() == nil
     }
 
-    func mark() -> CharacterStream {
-        return chars
+    func mark() -> Mark {
+        return Mark(chars: chars, tokens: tokens)
     }
 
-    func reset(_ old: CharacterStream) {
-        chars = old
+    func reset(_ old: Mark) {
+        chars = old.chars
+        tokens = old.tokens
     }
 
     func error(_ message: String) -> ParseError {
