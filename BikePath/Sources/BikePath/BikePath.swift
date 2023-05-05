@@ -279,6 +279,8 @@ public enum TokenType: Equatable {
     case attribute
     case functionName
     case relation
+    case quotedString
+    case unquotedString
 }
 
 public struct Token: Equatable {
@@ -951,6 +953,7 @@ public class Parser {
     }
 
     func parseQuotedString() throws -> String {
+        let pos = mark()
         guard skipPrefix("\"") else {
             throw error("expected '\"'")
         }
@@ -959,6 +962,7 @@ public class Parser {
 
         while let c = chars.next() {
             if c == "\"" {
+                emit(.quotedString, startingAt: pos)
                 return string
             } else if c == "\\" {
                 guard let c = chars.next() else {
@@ -988,6 +992,7 @@ public class Parser {
     }
 
     func parseUnquotedString() throws -> String {
+        let pos = mark()
         if skipKeyword() {
             throw error("unexpected keyword")
         }
@@ -1000,10 +1005,13 @@ public class Parser {
 
         if cs.contains(c) {
             _ = chars.next()
+            emit(.unquotedString, startingAt: pos)
             return String(c)
         }
 
-        return try parseIdentifier()
+        let s = try parseIdentifier()
+        emit(.unquotedString, startingAt: pos)
+        return s
     }
 
     func parseIdentifier() throws -> String {

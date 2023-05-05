@@ -948,16 +948,106 @@ final class BikePathTests: XCTestCase {
 
     // Mark: - Tokens
 
+    func testParseUnquotedStringToken() throws {
+        let s = "foo"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r = s.range(of: "foo")!
+        let v = s[r]
+
+        let expected = [Token(type: .unquotedString, range: r, value: v)]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseMultipleUnquotedStringTokens() throws {
+        let s = "foo bar baz"
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r1 = s.range(of: "foo")!
+        let v1 = s[r1]
+
+        let r2 = s.range(of: "bar")!
+        let v2 = s[r2]
+
+        let r3 = s.range(of: "baz")!
+        let v3 = s[r3]
+
+        let expected = [
+            Token(type: .unquotedString, range: r1, value: v1),
+            Token(type: .unquotedString, range: r2, value: v2),
+            Token(type: .unquotedString, range: r3, value: v3),
+        ]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseQuotedStringToken() throws {
+        let s = "\"foo\""
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r = s.range(of: "\"foo\"")!
+        let v = s[r]
+
+        let expected = [Token(type: .quotedString, range: r, value: v)]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testParseQuotedAndUnquotedStringTokens() throws {
+        let s = "foo \"bar\" baz \"qux\""
+        let p = Parser(s)
+
+        _ = try p.parse()
+
+        let r1 = s.range(of: "foo")!
+        let v1 = s[r1]
+
+        let r2 = s.range(of: "\"bar\"")!
+        let v2 = s[r2]
+
+        let r3 = s.range(of: "baz")!
+        let v3 = s[r3]
+
+        let r4 = s.range(of: "\"qux\"")!
+        let v4 = s[r4]
+
+        let expected = [
+            Token(type: .unquotedString, range: r1, value: v1),
+            Token(type: .quotedString, range: r2, value: v2),
+            Token(type: .unquotedString, range: r3, value: v3),
+            Token(type: .quotedString, range: r4, value: v4),
+        ]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
     func testParseAxisToken() throws {
         let s = "descendant::foo"
         let p = Parser(s)
 
         _ = try p.parse()
 
-        let range = s.range(of: "descendant::")!
-        let value = s[range]
+        let r1 = s.range(of: "descendant::")!
+        let v1 = s[r1]
 
-        let expected = [Token(type: .axis, range: range, value: value)]
+        let r2 = s.range(of: "foo")!
+        let v2 = s[r2]
+
+        let expected = [
+            Token(type: .axis, range: r1, value: v1),
+            Token(type: .unquotedString, range: r2, value: v2),
+        ]
         let actual = p.tokens
 
         XCTAssertEqual(expected, actual)
@@ -971,18 +1061,25 @@ final class BikePathTests: XCTestCase {
 
         let r1 = s.startIndex..<s.index(s.startIndex, offsetBy: 1)
         let v1 = s[r1]
+        XCTAssertEqual(v1, "/")
 
         let r2 = s.index(s.startIndex, offsetBy: 1)..<s.index(s.startIndex, offsetBy: 3)
         let v2 = s[r2]
+        XCTAssertEqual(v2, "//")
+
+        let r3 = s.range(of: "foo")!
+        let v3 = s[r3]
+
+        let r4 = s.range(of: "bar")!
+        let v4 = s[r4]
 
         let expected = [
             Token(type: .axis, range: r1, value: v1),
             Token(type: .axis, range: r2, value: v2),
+            Token(type: .unquotedString, range: r3, value: v3),
+            Token(type: .unquotedString, range: r4, value: v4),
         ]
         let actual = p.tokens
-
-        XCTAssertEqual(v1, "/")
-        XCTAssertEqual(v2, "//")
 
         XCTAssertEqual(expected, actual)
     }
@@ -996,16 +1093,24 @@ final class BikePathTests: XCTestCase {
         let r1 = s.range(of: "descendant::")!
         let v1 = s[r1]
 
-        let r2 = s.range(of: "/")!
+        let r2 = s.range(of: "foo")!
         let v2 = s[r2]
 
-        let r3 = s.range(of: "child::")!
+        let r3 = s.range(of: "/")!
         let v3 = s[r3]
+
+        let r4 = s.range(of: "child::")!
+        let v4 = s[r4]
+
+        let r5 = s.range(of: "bar")!
+        let v5 = s[r5]
 
         let expected = [
             Token(type: .axis, range: r1, value: v1),
-            Token(type: .axis, range: r2, value: v2),
+            Token(type: .unquotedString, range: r2, value: v2),
             Token(type: .axis, range: r3, value: v3),
+            Token(type: .axis, range: r4, value: v4),
+            Token(type: .unquotedString, range: r5, value: v5),
         ]
         let actual = p.tokens
 
@@ -1018,10 +1123,16 @@ final class BikePathTests: XCTestCase {
 
         _ = try p.parse()
 
-        let r = s.range(of: "=")!
-        let v = s[r]
+        let r1 = s.range(of: "=")!
+        let v1 = s[r1]
 
-        let expected = [Token(type: .relation, range: r, value: v)]
+        let r2 = s.range(of: "shoes")!
+        let v2 = s[r2]
+
+        let expected = [
+            Token(type: .relation, range: r1, value: v1),
+            Token(type: .unquotedString, range: r2, value: v2),
+        ]
         let actual = p.tokens
 
         XCTAssertEqual(expected, actual)
@@ -1039,9 +1150,13 @@ final class BikePathTests: XCTestCase {
         let r2 = s.range(of: "beginswith")!
         let v2 = s[r2]
 
+        let r3 = s.range(of: "bar")!
+        let v3 = s[r3]
+
         let expected = [
             Token(type: .attribute, range: r1, value: v1),
             Token(type: .relation, range: r2, value: v2),
+            Token(type: .unquotedString, range: r3, value: v3),
         ]
         let actual = p.tokens
 
@@ -1054,6 +1169,9 @@ final class BikePathTests: XCTestCase {
 
         _ = try p.parse()
 
+        let r0 = s.range(of: "foo")!
+        let v0 = s[r0]
+
         let r1 = s.range(of: "/")!
         let v1 = s[r1]
 
@@ -1063,10 +1181,15 @@ final class BikePathTests: XCTestCase {
         let r3 = s.range(of: "=")!
         let v3 = s[r3]
 
+        let r4 = s.range(of: "bar")!
+        let v4 = s[r4]
+
         let expected = [
+            Token(type: .unquotedString, range: r0, value: v0),
             Token(type: .axis, range: r1, value: v1),
             Token(type: .type, range: r2, value: v2),
             Token(type: .relation, range: r3, value: v3),
+            Token(type: .unquotedString, range: r4, value: v4),
         ]
         let actual = p.tokens
 
@@ -1104,19 +1227,31 @@ final class BikePathTests: XCTestCase {
 
         _ = try p.parse()
 
+        let r0 = s.range(of: "foo")!
+        let v0 = s[r0]
+
         let r1 = s.range(of: "/")!
         let v1 = s[r1]
 
         let r2 = s.range(of: "count")!
         let v2 = s[r2]
 
-        let r3 = s.range(of: "=")!
+        let r3 = s.range(of: "bar")!
         let v3 = s[r3]
 
+        let r4 = s.range(of: "=")!
+        let v4 = s[r4]
+
+        let r5 = s.range(of: "1")!
+        let v5 = s[r5]
+
         let expected = [
+            Token(type: .unquotedString, range: r0, value: v0),
             Token(type: .axis, range: r1, value: v1),
             Token(type: .functionName, range: r2, value: v2),
-            Token(type: .relation, range: r3, value: v3),
+            Token(type: .unquotedString, range: r3, value: v3),
+            Token(type: .relation, range: r4, value: v4),
+            Token(type: .unquotedString, range: r5, value: v5),
         ]
         let actual = p.tokens
 
@@ -1129,10 +1264,41 @@ final class BikePathTests: XCTestCase {
 
         _ = try p.parse()
 
-        let r = s.range(of: "count")!
-        let v = s[r]
+        let r1 = s.range(of: "count")!
+        let v1 = s[r1]
 
-        let expected = [Token(type: .functionName, range: r, value: v)]
+        let r2 = s.range(of: "foo")!
+        let v2 = s[r2]
+
+        let expected = [
+            Token(type: .functionName, range: r1, value: v1),
+            Token(type: .unquotedString, range: r2, value: v2),
+        ]
+        let actual = p.tokens
+
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testPartialTokensWithFailedParse() throws {
+        let s = "foo/heading heading"
+        let p = Parser(s)
+
+        XCTAssertThrowsError(try p.parse())
+
+        let r1 = s.range(of: "foo")!
+        let v1 = s[r1]
+
+        let r2 = s.range(of: "/")!
+        let v2 = s[r2]
+
+        let r3 = s.range(of: "heading")!
+        let v3 = s[r3]
+
+        let expected = [
+            Token(type: .unquotedString, range: r1, value: v1),
+            Token(type: .axis, range: r2, value: v2),
+            Token(type: .type, range: r3, value: v3),
+        ]
         let actual = p.tokens
 
         XCTAssertEqual(expected, actual)
