@@ -957,7 +957,7 @@ final class BikePathTests: XCTestCase {
         let range = s.range(of: "descendant::")!
         let value = s[range]
 
-        let expected = [Token(type: .axis, value: value, range: range)]
+        let expected = [Token(type: .axis, range: range, value: value)]
         let actual = p.tokens
 
         XCTAssertEqual(expected, actual)
@@ -976,8 +976,8 @@ final class BikePathTests: XCTestCase {
         let v2 = s[r2]
 
         let expected = [
-            Token(type: .axis, value: v1, range: r1),
-            Token(type: .axis, value: v2, range: r2),
+            Token(type: .axis, range: r1, value: v1),
+            Token(type: .axis, range: r2, value: v2),
         ]
         let actual = p.tokens
 
@@ -1003,9 +1003,9 @@ final class BikePathTests: XCTestCase {
         let v3 = s[r3]
 
         let expected = [
-            Token(type: .axis, value: v1, range: r1),
-            Token(type: .axis, value: v2, range: r2),
-            Token(type: .axis, value: v3, range: r3),
+            Token(type: .axis, range: r1, value: v1),
+            Token(type: .axis, range: r2, value: v2),
+            Token(type: .axis, range: r3, value: v3),
         ]
         let actual = p.tokens
 
@@ -1025,8 +1025,8 @@ final class BikePathTests: XCTestCase {
         let v2 = s[r2]
 
         let expected = [
-            Token(type: .axis, value: v1, range: r1),
-            Token(type: .type, value: v2, range: r2),
+            Token(type: .axis, range: r1, value: v1),
+            Token(type: .type, range: r2, value: v2),
         ]
         let actual = p.tokens
 
@@ -1046,8 +1046,8 @@ final class BikePathTests: XCTestCase {
         let v2 = s[r2]
 
         let expected = [
-            Token(type: .attribute, value: v1, range: r1),
-            Token(type: .attribute, value: v2, range: r2),
+            Token(type: .attribute, range: r1, value: v1),
+            Token(type: .attribute, range: r2, value: v2),
         ]
         let actual = p.tokens
 
@@ -1067,8 +1067,8 @@ final class BikePathTests: XCTestCase {
         let v2 = s[r2]
 
         let expected = [
-            Token(type: .axis, value: v1, range: r1),
-            Token(type: .functionName, value: v2, range: r2),
+            Token(type: .axis, range: r1, value: v1),
+            Token(type: .functionName, range: r2, value: v2),
         ]
         let actual = p.tokens
 

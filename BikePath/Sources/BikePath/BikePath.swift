@@ -282,8 +282,8 @@ public enum TokenType: Equatable {
 
 public struct Token: Equatable {
     var type: TokenType
-    var value: Substring
     var range: Range<String.Index>
+    var value: Substring
 }
 
 struct CharacterStream {
@@ -1248,7 +1248,7 @@ public class Parser {
     func emit(_ type: TokenType, startingAt m: Mark) {
         let range = m.chars.pos..<chars.pos
         let value = chars.string[range]
-        let token = Token(type: type, value: value, range: range)
+        let token = Token(type: type, range: range, value: value)
         tokens.append(token)
     }
 
