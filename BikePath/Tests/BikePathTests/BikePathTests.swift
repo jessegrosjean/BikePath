@@ -946,89 +946,6 @@ final class BikePathTests: XCTestCase {
         XCTAssertEqual(expected, actual)
     }
 
-    // Mark: - The kitchen sink
-
-    func testMediumQuery() throws {
-        let p = Parser("//heading//count(.*) = 0[0]")
-
-        let expected = PathExpression.location(
-            .path(Path(absolute: true, steps: [
-                Step(axis: .descendantShortcut, type: .heading, predicate: .any),
-                Step(axis: .descendantShortcut, type: .any, predicate: .comparison(
-                    .function(Function(name: "count", arg: .path(Path(absolute: false, steps: [
-                        Step(axis: .selfShortcut, type: .any, predicate: .any)
-                    ])))), .equal, .caseInsensitive, .literal("0")
-                ), slice: Slice(start: 0, end: nil)),
-            ]))
-        )
-
-        let actual = try p.parse()
-        XCTAssertEqual(expected, actual)
-    }
-
-
-    func testLargeQuery() throws {
-        let p = Parser("heading foo//@type = task and not @done[0]")
-
-        let expected = PathExpression.location(
-            .path(Path(absolute: false, steps: [
-                Step(axis: .child, type: .heading, predicate: .comparison(
-                    .getAttribute("text"), .contains, .caseInsensitive, .literal("foo")
-                )),
-                Step(axis: .descendantShortcut, type: .any, predicate: .and(
-                    .comparison(
-                        .getAttribute("type"), .equal, .caseInsensitive, .literal("task")
-                    ),
-                    .not(.comparison(
-                        .getAttribute("done"), nil, .caseInsensitive, nil)
-                    )
-                ), slice: Slice(start: 0, end: nil))
-            ]))
-        )
-
-        let actual = try p.parse()
-        XCTAssertEqual(expected, actual)
-    }
-
-    func testHugeQuery() throws {
-        let p = Parser("/child::@text contains [s] Foo Bar/following::heading (@dueDate <= [d] \"2019-01-01\" or @tag = longPast) and @assignee = Bob union /foo/..*/following-sibling::@text contains [s] Baz")
-
-        let expected = PathExpression.location(
-            .union(
-                .path(Path(absolute: true, steps: [
-                    Step(axis: .child, type: .any, predicate: .comparison(
-                        .getAttribute("text"), .contains, .caseSensitive, .literal("Foo Bar"))
-                    ),
-                    Step(axis: .following, type: .heading, predicate: .and(
-                        .or(
-                            .comparison(
-                                .getAttribute("dueDate"), .lessThanOrEqual, .dateCompare, .literal("2019-01-01")
-                            ),
-                            .comparison(
-                                .getAttribute("tag"), .equal, .caseInsensitive, .literal("longPast")
-                            )
-                        ),
-                        .comparison(
-                            .getAttribute("assignee"), .equal, .caseInsensitive, .literal("Bob"))
-                        )
-                    ),
-                ])),
-                .path(Path(absolute: true, steps: [
-                    Step(axis: .child, type: .any, predicate: .comparison(
-                        .getAttribute("text"), .contains, .caseInsensitive, .literal("foo"))
-                    ),
-                    Step(axis: .parentShortcut, type: .any, predicate: .any),
-                    Step(axis: .followingSibling, type: .any, predicate: .comparison(
-                        .getAttribute("text"), .contains, .caseSensitive, .literal("Baz"))
-                    ),
-                ]))
-            )
-        )
-
-        let actual = try p.parse()
-        XCTAssertEqual(expected, actual)
-    }
-
     // Mark: - Tokens
 
     func testParseAxisToken() throws {
@@ -1155,6 +1072,89 @@ final class BikePathTests: XCTestCase {
         ]
         let actual = p.tokens
 
+        XCTAssertEqual(expected, actual)
+    }
+
+    // Mark: - The kitchen sink
+
+    func testMediumQuery() throws {
+        let p = Parser("//heading//count(.*) = 0[0]")
+
+        let expected = PathExpression.location(
+            .path(Path(absolute: true, steps: [
+                Step(axis: .descendantShortcut, type: .heading, predicate: .any),
+                Step(axis: .descendantShortcut, type: .any, predicate: .comparison(
+                    .function(Function(name: "count", arg: .path(Path(absolute: false, steps: [
+                        Step(axis: .selfShortcut, type: .any, predicate: .any)
+                    ])))), .equal, .caseInsensitive, .literal("0")
+                ), slice: Slice(start: 0, end: nil)),
+            ]))
+        )
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+
+    func testLargeQuery() throws {
+        let p = Parser("heading foo//@type = task and not @done[0]")
+
+        let expected = PathExpression.location(
+            .path(Path(absolute: false, steps: [
+                Step(axis: .child, type: .heading, predicate: .comparison(
+                    .getAttribute("text"), .contains, .caseInsensitive, .literal("foo")
+                )),
+                Step(axis: .descendantShortcut, type: .any, predicate: .and(
+                    .comparison(
+                        .getAttribute("type"), .equal, .caseInsensitive, .literal("task")
+                    ),
+                    .not(.comparison(
+                        .getAttribute("done"), nil, .caseInsensitive, nil)
+                    )
+                ), slice: Slice(start: 0, end: nil))
+            ]))
+        )
+
+        let actual = try p.parse()
+        XCTAssertEqual(expected, actual)
+    }
+
+    func testHugeQuery() throws {
+        let p = Parser("/child::@text contains [s] Foo Bar/following::heading (@dueDate <= [d] \"2019-01-01\" or @tag = longPast) and @assignee = Bob union /foo/..*/following-sibling::@text contains [s] Baz")
+
+        let expected = PathExpression.location(
+            .union(
+                .path(Path(absolute: true, steps: [
+                    Step(axis: .child, type: .any, predicate: .comparison(
+                        .getAttribute("text"), .contains, .caseSensitive, .literal("Foo Bar"))
+                    ),
+                    Step(axis: .following, type: .heading, predicate: .and(
+                        .or(
+                            .comparison(
+                                .getAttribute("dueDate"), .lessThanOrEqual, .dateCompare, .literal("2019-01-01")
+                            ),
+                            .comparison(
+                                .getAttribute("tag"), .equal, .caseInsensitive, .literal("longPast")
+                            )
+                        ),
+                        .comparison(
+                            .getAttribute("assignee"), .equal, .caseInsensitive, .literal("Bob"))
+                        )
+                    ),
+                ])),
+                .path(Path(absolute: true, steps: [
+                    Step(axis: .child, type: .any, predicate: .comparison(
+                        .getAttribute("text"), .contains, .caseInsensitive, .literal("foo"))
+                    ),
+                    Step(axis: .parentShortcut, type: .any, predicate: .any),
+                    Step(axis: .followingSibling, type: .any, predicate: .comparison(
+                        .getAttribute("text"), .contains, .caseSensitive, .literal("Baz"))
+                    ),
+                ]))
+            )
+        )
+
+        let actual = try p.parse()
         XCTAssertEqual(expected, actual)
     }
 }
