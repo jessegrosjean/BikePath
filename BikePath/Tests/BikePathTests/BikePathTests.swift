@@ -946,7 +946,7 @@ final class BikePathTests: XCTestCase {
     }
 
     func testHugeQuery() throws {
-        let p = Parser("/child::@text contains [s] Foo Bar/following::(@dueDate <= [d] \"2019-01-01\" or @tag = longPast) and @assignee = Bob union /foo/..*/following-sibling::@text contains [s] Baz")
+        let p = Parser("/child::@text contains [s] Foo Bar/following::heading (@dueDate <= [d] \"2019-01-01\" or @tag = longPast) and @assignee = Bob union /foo/..*/following-sibling::@text contains [s] Baz")
 
         let expected = PathExpression.location(
             .union(
@@ -954,7 +954,7 @@ final class BikePathTests: XCTestCase {
                     Step(axis: .child, type: .any, predicate: .comparison(
                         .getAttribute("text"), .contains, .caseSensitive, .literal("Foo Bar"))
                     ),
-                    Step(axis: .following, type: .any, predicate: .and(
+                    Step(axis: .following, type: .heading, predicate: .and(
                         .or(
                             .comparison(
                                 .getAttribute("dueDate"), .lessThanOrEqual, .dateCompare, .literal("2019-01-01")
